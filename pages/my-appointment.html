@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>我的预约</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{font-family:"PingFang SC","-apple-system",sans-serif;background:#f1f4fa;color:#1f2329;font-size:14px;}
+  .phone{position:relative;width:390px;height:844px;margin:0 auto;background:#f1f4fa;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.12);border-radius:44px;}
+
+  /* 状态栏 */
+  .status-bar{height:44px;padding:14px 22px 0;display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600;}
+  .status-right{display:flex;align-items:center;gap:6px;}
+  .status-right svg{color:#1f2329;}
+
+  /* 导航栏 */
+  .nav{height:48px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;position:relative;}
+  .nav .back{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#1f2329;}
+  .nav .title{font-size:17px;font-weight:600;}
+  .nav .scan-btn{height:28px;padding:0 10px;border-radius:14px;background:#f0f5ff;color:#2f7bff;font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;}
+  .nav .scan-btn:active{transform:scale(.96);}
+
+  /* 滚动容器 */
+  .scroll{position:absolute;left:0;right:0;top:92px;bottom:0;overflow-y:auto;padding:0 16px 100px;}
+  .scroll::-webkit-scrollbar{width:0;}
+
+  /* 设备预约白卡 */
+  .cal-card{background:#fff;border-radius:14px;padding:14px 16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .cal-title{font-size:16px;font-weight:600;}
+  .cal-all{font-size:12px;color:#8a8f99;display:flex;align-items:center;gap:2px;cursor:pointer;}
+  .cal-user{display:flex;align-items:center;gap:10px;margin:6px 0 10px;}
+  .cal-user .avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#a8c0ff,#3f2b96);position:relative;overflow:hidden;}
+  .cal-user .avatar::after{content:"";position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#fff;}
+  .cal-user .avatar::before{content:"";position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#fff;opacity:.0;}
+  .cal-month{font-size:15px;font-weight:600;display:flex;align-items:center;gap:4px;color:#1f2329;}
+  .cal-month svg{margin-left:2px;}
+
+  /* 星期表头 */
+  .week-row{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-top:8px;}
+  .week-row span{font-size:12px;color:#8a8f99;padding:6px 0;}
+
+  /* 日期网格 */
+  .day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;}
+  .day{position:relative;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#1f2329;font-size:14px;}
+  .day.gray{color:#c4c8d0;}
+  .day .num{line-height:1;margin-top:8px;}
+  .day .dot{position:absolute;bottom:5px;width:5px;height:5px;border-radius:50%;}
+  .dot-green{background:#3fc59f;}
+  .dot-orange{background:#ff8a00;}
+  .dot-blue{background:#2f7bff;}
+  .day.sel .num{width:28px;height:28px;border-radius:50%;background:#2f7bff;color:#fff;display:flex;align-items:center;justify-content:center;margin-top:5px;}
+  .day.sel .dot{display:none;}
+
+  /* 日期分组标题 */
+  .day-cap{font-size:12px;color:#8a8f99;margin:18px 0 8px;}
+
+  /* 预约卡片 */
+  .appt{background:#fff;border-radius:12px;padding:14px 14px 12px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);position:relative;}
+  .appt-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .appt-left{display:flex;align-items:center;gap:8px;}
+  .appt-dot{width:10px;height:10px;border-radius:50%;}
+  .appt-name{font-size:15px;font-weight:600;color:#1f2329;}
+  .appt-status{font-size:12px;padding:3px 10px;border-radius:10px;}
+  .st-wait{background:#eaf3ff;color:#2f7bff;}
+  .st-ongoing{background:#fff1e6;color:#ff8a00;}
+  .st-cancel{background:#f0f2f5;color:#8a8f99;}
+  .appt-meta{font-size:12px;color:#1f2329;margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;}
+  .appt-meta .sep{color:#d8dce3;}
+  .appt-remark{font-size:12px;color:#8a8f99;margin:6px 0 10px;line-height:1.5;}
+  .appt-time-row{display:flex;align-items:center;justify-content:space-between;background:#f6f7f9;padding:7px 10px;border-radius:6px;}
+  .appt-time{font-size:12px;color:#5a6068;}
+  .appt-more{color:#8a8f99;cursor:pointer;padding:0 4px;}
+
+  /* Toast */
+  .toast{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.78);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:99;opacity:0;pointer-events:none;transition:opacity .2s;max-width:280px;text-align:center;}
+  .toast.show{opacity:1;}
+
+  /* 底部 */
+  .home-indicator{position:absolute;left:0;right:0;bottom:8px;height:5px;display:flex;justify-content:center;}
+  .home-indicator::before{content:"";width:140px;height:5px;background:#1f2329;border-radius:3px;opacity:.85;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar">
+    <span>12:00</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="6" width="3" height="5" rx=".6"/><rect x="4.5" y="4" width="3" height="7" rx=".6"/><rect x="9" y="2" width="3" height="9" rx=".6"/><rect x="13.5" y="0" width="3" height="11" rx=".6"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 4c4-4 10-4 14 0M3.5 6.5c3-3 6-3 9 0M6 9c1-1 3-1 4 0"/></svg>
+      <svg width="27" height="12" viewBox="0 0 27 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5" stroke="currentColor" stroke-width="1"/><rect x="2" y="2" width="18" height="8" rx="1.4" fill="currentColor"/><path d="M24 4v4h1.5a1 1 0 001-1V5a1 1 0 00-1-1H24z" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="back" onclick="location.href='me.html'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+    </div>
+    <div class="title">我的预约</div>
+    <div class="scan-btn" onclick="goScanReserve()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="7" height="7" rx="1"/>
+        <rect x="14" y="4" width="7" height="7" rx="1"/>
+        <rect x="3" y="15" width="7" height="5" rx="1"/>
+        <path d="M14 15h3v3M14 20h7M20 14v6"/>
+      </svg>
+      扫码预约
+    </div>
+  </div>
+
+  <div class="scroll">
+    <!-- 设备预约白卡 -->
+    <div class="cal-card" style="position:relative;">
+      <div class="cal-head">
+        <div class="cal-title">设备预约</div>
+        <div class="cal-all" onclick="toast('全部预约')">
+          全部预约
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+      </div>
+
+      <div class="cal-user">
+        <div class="avatar"></div>
+        <div class="cal-month">
+          2025年8月
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <div class="week-row">
+        <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+      </div>
+
+      <div class="day-grid" id="dayGrid">
+        <!-- JS 渲染 -->
+      </div>
+    </div>
+
+    <!-- 预约记录 -->
+    <div class="day-cap">08-27</div>
+    <div class="appt">
+      <div class="appt-head">
+        <div class="appt-left">
+          <div class="appt-dot" style="background:#2f7bff;"></div>
+          <div class="appt-name">张三的预约</div>
+        </div>
+        <div class="appt-status st-wait">待开始</div>
+      </div>
+      <div class="appt-meta">
+        <span>213213321544681868</span>
+        <span class="sep">|</span>
+        <span>96通道移液工作站工作站工…</span>
+      </div>
+      <div class="appt-remark">这是预约时备注</div>
+      <div class="appt-time-row">
+        <div class="appt-time">2025-08-27 13:00 ~ 2025-08-28 14:00</div>
+        <div class="appt-more" onclick="openApptMenu(this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="day-cap">08-21</div>
+    <div class="appt">
+      <div class="appt-head">
+        <div class="appt-left">
+          <div class="appt-dot" style="background:#ff8a00;"></div>
+          <div class="appt-name">张三的预约</div>
+        </div>
+        <div class="appt-status st-ongoing">进行中</div>
+      </div>
+      <div class="appt-meta">
+        <span>213213321544681868</span>
+        <span class="sep">|</span>
+        <span>96通道移液工作站工作站工…</span>
+      </div>
+      <div class="appt-remark">完成李老师交代的学术课题，通过实验分析获得课题内容…</div>
+      <div class="appt-time-row">
+        <div class="appt-time">2025-08-21 11:00 ~ 2025-08-22 12:30</div>
+        <div class="appt-more" onclick="openApptMenu(this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="day-cap">08-15</div>
+    <div class="appt">
+      <div class="appt-head">
+        <div class="appt-left">
+          <div class="appt-dot" style="background:#8a8f99;"></div>
+          <div class="appt-name">张三的预约</div>
+        </div>
+        <div class="appt-status st-cancel">已取消</div>
+      </div>
+      <div class="appt-meta">
+        <span>213213321544681868</span>
+        <span class="sep">|</span>
+        <span>96通道移液工作站工作站工…</span>
+      </div>
+      <div class="appt-time-row">
+        <div class="appt-time">2025-08-15 09:00 ~ 2025-08-15 18:00</div>
+        <div class="appt-more" onclick="openApptMenu(this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  // 日历数据：2025-08
+  // 8月1日是周五
+  var firstWeekday = 5; // 周五（0=日,1=一,...,5=五）
+  var totalDays = 31;
+  // 上月7月（28-31）补位
+  var prevTail = [];
+  for (var i = firstWeekday - 1; i >= 0; i--) prevTail.push(28 + (4 - i));
+  // 渲染
+  var grid = document.getElementById('dayGrid');
+  var html = '';
+  prevTail.forEach(function(d){
+    html += '<div class="day gray"><span class="num">'+d+'</span></div>';
+  });
+  // 每月每一天 + 圆点
+  var dots = {
+    15: 'dot-green',   // 绿
+    21: 'dot-orange',  // 橙
+    22: 'dot-orange',  // 橙
+    29: 'dot-blue'     // 蓝
+  };
+  for (var d = 1; d <= totalDays; d++){
+    var sel = (d === 21) ? ' sel' : '';
+    var dot = dots[d] ? '<div class="dot '+dots[d]+'"></div>' : '';
+    html += '<div class="day'+sel+'" data-d="'+d+'"><span class="num">'+d+'</span>'+dot+'</div>';
+  }
+  // 下月补位 (让最后一行完整)
+  var rendered = prevTail.length + totalDays;
+  var tail = (7 - rendered % 7) % 7;
+  for (var i = 1; i <= tail; i++){
+    html += '<div class="day gray"><span class="num">'+i+'</span></div>';
+  }
+  grid.innerHTML = html;
+
+  // 切换选中
+  grid.addEventListener('click', function(e){
+    var t = e.target.closest('.day');
+    if(!t || t.classList.contains('gray')) return;
+    grid.querySelectorAll('.day.sel').forEach(function(n){ n.classList.remove('sel'); });
+    t.classList.add('sel');
+    toast('已选择 ' + t.dataset.d + ' 日');
+  });
+
+  function toast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(window._t);
+    window._t = setTimeout(function(){ el.classList.remove('show'); }, 1600);
+  }
+  function goScanReserve(){
+    toast('扫码预约设备');
+  }
+  function openApptMenu(btn){
+    toast('操作菜单（待开发）');
+  }
+</script>
+</body>
+</html>

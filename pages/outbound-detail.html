@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出库详情</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  html, body {
+    background: #e9eef5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif;
+    color: #1f2329;
+    display: flex; justify-content: center; min-height: 100vh;
+  }
+  body { padding: 24px 0; }
+  .phone {
+    width: 390px; min-height: 844px;
+    background: #f1f4fa;
+    border-radius: 44px;
+    box-shadow: 0 20px 50px rgba(20, 40, 80, 0.18);
+    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar { height: 44px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; flex-shrink: 0; }
+  .status-right { display: flex; align-items: center; gap: 6px; }
+  .status-right svg { display: block; }
+  .nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; height: 44px; padding: 0 8px; flex-shrink: 0; }
+  .nav .back { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #1f2329; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .nav .back:active { opacity: .5; }
+  .nav .title { text-align: center; font-size: 17px; font-weight: 600; color: #1f2329; }
+
+  .content { padding: 0 14px 30px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
+
+  /* 分组（与入库详情页统一） */
+  .group { background: #fff; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(20,40,80,.04); overflow: hidden; }
+  .group-title { background: #eef2f7; padding: 10px 14px; font-size: 13px; font-weight: 600; color: #1f2329; }
+  .row { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; min-height: 44px; }
+  .row:last-child { border-bottom: 0; }
+  .row .k { color: #8a8f99; width: 90px; flex-shrink: 0; }
+  .row .v { color: #1f2329; font-weight: 500; flex: 1; text-align: right; word-break: break-all; }
+  .row .v.placeholder { color: #c8ccd4; font-weight: 400; }
+
+  /* 图片展示行 */
+  .img-row { display: flex; align-items: flex-start; padding: 12px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; min-height: 44px; }
+  .img-row:last-child { border-bottom: 0; }
+  .img-row .k { color: #8a8f99; width: 90px; flex-shrink: 0; padding-top: 2px; }
+  .img-row .img-list { flex: 1; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .img-row .img-item {
+    width: 52px; height: 52px; border-radius: 6px;
+    background: #f1f4fa; border: 1px solid #e6e8ee;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .img-row .img-item svg { color: #b8bcc4; }
+  .img-row .no-img { color: #c8ccd4; font-size: 13px; align-self: center; }
+
+  /* 仓库行 */
+  .info-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+  .info-row .k { color: #8a8f99; }
+  .info-row .v { color: #1f2329; font-weight: 500; }
+
+  /* 出库清单汇总表 */
+  .table-wrap { position: relative; overflow: hidden; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .table-scroll::-webkit-scrollbar { height: 4px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: #d6dbe3; border-radius: 2px; }
+  .table-scroll::-webkit-scrollbar-track { background: transparent; }
+  table { border-collapse: collapse; min-width: 100%; }
+  thead th { background: #f7f9fc; color: #8a8f99; font-size: 12px; font-weight: 500; padding: 10px 12px; text-align: left; white-space: nowrap; border-bottom: 1px solid #f0f2f5; }
+  tbody td { padding: 12px; font-size: 12px; color: #1f2329; border-bottom: 1px solid #f0f2f5; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:active { background: #f7f9fc; }
+  .op-btns { display: flex; gap: 4px; }
+  .op-btn { padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; -webkit-tap-highlight-color: transparent; border: 1px solid; }
+  .op-btn.outline-blue { color: #2f7bff; border-color: #2f7bff; background: #fff; }
+  .op-btn.outline-blue:active { background: #e8f1ff; }
+  .op-btn.outline-green { color: #2a9d7e; border-color: #2a9d7e; background: #fff; }
+  .op-btn.outline-green:active { background: #e3f5ed; }
+  .qr-mini { width: 22px; height: 22px; display: inline-block; vertical-align: middle; }
+
+  /* 批次出库表标题 */
+  .batch-sub-title { background: #f7f9fc; padding: 8px 14px; font-size: 12px; font-weight: 600; color: #2f7bff; border-bottom: 1px solid #f0f2f5; }
+
+  /* 滑动提示 */
+  .slide-hint { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; font-size: 11px; color: #b8bcc4; background: #fafbfc; border-top: 1px solid #f0f2f5; }
+
+  /* Toast */
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; z-index: 30; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar">
+    <span id="stTime">11:08</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0"  y="7" width="3" height="4" rx="0.5" fill="#1f2329"/><rect x="4.5" y="5" width="3" height="6" rx="0.5" fill="#1f2329"/><rect x="9" y="2.5" width="3" height="8.5" rx="0.5" fill="#1f2329"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#1f2329"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11"><path d="M8 10.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#1f2329"/><path d="M3.5 6.2a6.4 6.4 0 019 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M1 3.5a9.5 9.5 0 0114 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="#1f2329" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="#1f2329"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#1f2329" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="back" onclick="goBack()" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f2329" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">出库详情</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <div class="content" id="content">
+    <!-- 由 JS 动态渲染 -->
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  // 数据
+  var DATA = {
+    '0': {
+      name: '试剂', cat: '化学试剂', no: 'a3321', spec: '500ml', unit: '瓶',
+      outTime: '2026-07-07 08:41:08', outQty: 3, receiver: '哈哈', remark: '暂无备注',
+      periodic: '否',
+      wh: '乃东路一号库',
+      imgs: 1,
+      batches: [
+        { bid: 'pc0002', price: 100, qty: 1, subs: [
+          { no: 'a3321-009' }
+        ]},
+        { bid: 'p0003', price: 20, qty: 2, subs: [
+          { no: 'a3321-001' },
+          { no: 'a3321-002' }
+        ]}
+      ]
+    },
+    '1': {
+      name: '实验用手套', cat: '防护用品', no: 'c1025', spec: 'L码', unit: '副',
+      outTime: '2026-07-06 16:08:21', outQty: 5, receiver: '扎西顿珠', remark: '暂无备注',
+      periodic: '否',
+      wh: '泽当中心库',
+      imgs: 0,
+      batches: [
+        { bid: 'g1025-1', price: 30, qty: 5, subs: [
+          { no: 'g1025-01' },
+          { no: 'g1025-02' },
+          { no: 'g1025-03' },
+          { no: 'g1025-04' },
+          { no: 'g1025-05' }
+        ]}
+      ]
+    },
+    '2': {
+      name: '离心管', cat: '实验耗材', no: 'c2078', spec: '15ml', unit: '包',
+      outTime: '2026-07-05 11:32:50', outQty: 22, receiver: '次仁旺姆', remark: '项目组领用',
+      periodic: '否',
+      wh: '样品暂存库',
+      imgs: 0,
+      batches: [
+        { bid: 't2078-2', price: 15, qty: 22, subs: [
+          { no: 't2078-01' },
+          { no: 't2078-02' }
+        ]}
+      ]
+    }
+  };
+
+  function getIdx(){
+    var m = location.search.match(/[?&]idx=(\d+)/);
+    return m ? m[1] : '0';
+  }
+  var d = DATA[getIdx()] || DATA['0'];
+
+  function goBack(){
+    if(history.length > 1) history.back();
+    else location.href = 'outbound.html';
+  }
+
+  function qrMiniSvg(){
+    return '<svg class="qr-mini" viewBox="0 0 100 100">'
+      + '<rect width="100" height="100" fill="#fff"/>'
+      + '<rect x="8" y="8" width="22" height="22" fill="#1f2329"/><rect x="12" y="12" width="14" height="14" fill="#fff"/><rect x="15" y="15" width="8" height="8" fill="#1f2329"/>'
+      + '<rect x="70" y="8" width="22" height="22" fill="#1f2329"/><rect x="74" y="12" width="14" height="14" fill="#fff"/><rect x="77" y="15" width="8" height="8" fill="#1f2329"/>'
+      + '<rect x="8" y="70" width="22" height="22" fill="#1f2329"/><rect x="12" y="74" width="14" height="14" fill="#fff"/><rect x="15" y="77" width="8" height="8" fill="#1f2329"/>'
+      + '<g fill="#1f2329">'
+      + '<rect x="36" y="8" width="4" height="4"/><rect x="46" y="8" width="4" height="4"/><rect x="56" y="8" width="4" height="4"/>'
+      + '<rect x="40" y="20" width="4" height="4"/><rect x="50" y="20" width="4" height="4"/><rect x="60" y="20" width="4" height="4"/>'
+      + '<rect x="8" y="36" width="4" height="4"/><rect x="20" y="36" width="4" height="4"/><rect x="32" y="36" width="4" height="4"/><rect x="44" y="36" width="4" height="4"/><rect x="56" y="36" width="4" height="4"/><rect x="68" y="36" width="4" height="4"/><rect x="80" y="36" width="4" height="4"/><rect x="88" y="36" width="4" height="4"/>'
+      + '<rect x="14" y="48" width="4" height="4"/><rect x="26" y="48" width="4" height="4"/><rect x="38" y="48" width="4" height="4"/><rect x="50" y="48" width="4" height="4"/><rect x="62" y="48" width="4" height="4"/><rect x="74" y="48" width="4" height="4"/><rect x="86" y="48" width="4" height="4"/>'
+      + '<rect x="20" y="60" width="4" height="4"/><rect x="32" y="60" width="4" height="4"/><rect x="44" y="60" width="4" height="4"/><rect x="56" y="60" width="4" height="4"/><rect x="68" y="60" width="4" height="4"/><rect x="80" y="60" width="4" height="4"/>'
+      + '<rect x="40" y="72" width="4" height="4"/><rect x="52" y="72" width="4" height="4"/><rect x="64" y="72" width="4" height="4"/><rect x="76" y="72" width="4" height="4"/>'
+      + '<rect x="44" y="84" width="4" height="4"/><rect x="56" y="84" width="4" height="4"/><rect x="68" y="84" width="4" height="4"/><rect x="80" y="84" width="4" height="4"/>'
+      + '</g></svg>';
+  }
+
+  function imgPlaceholderSvg(){
+    return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>';
+  }
+
+  function render(){
+    var html = '';
+
+    // 1. 出库信息
+    html += '<div class="group">';
+    html += '<div class="group-title">出库信息</div>';
+    html += '<div class="row"><span class="k">物料名称</span><span class="v">'+d.name+'</span></div>';
+    html += '<div class="row"><span class="k">物料编号</span><span class="v">'+d.no+'</span></div>';
+    html += '<div class="row"><span class="k">类目</span><span class="v">'+d.cat+'</span></div>';
+    html += '<div class="row"><span class="k">规格</span><span class="v">'+d.spec+'</span></div>';
+    html += '<div class="row"><span class="k">单位</span><span class="v">'+d.unit+'</span></div>';
+    html += '<div class="row"><span class="k">出库时间</span><span class="v">'+d.outTime+'</span></div>';
+    html += '<div class="row"><span class="k">出库数量</span><span class="v">'+d.outQty+'</span></div>';
+    html += '<div class="row"><span class="k">领用人</span><span class="v">'+d.receiver+'</span></div>';
+
+    // 图片（仅展示）
+    html += '<div class="img-row"><span class="k">图片</span>';
+    if(d.imgs > 0){
+      html += '<div class="img-list">';
+      for(var i=0; i<d.imgs; i++){
+        html += '<div class="img-item">'+imgPlaceholderSvg()+'</div>';
+      }
+      html += '</div>';
+    } else {
+      html += '<div class="no-img">无</div>';
+    }
+    html += '</div>';
+
+    // 周期性使用完（仅展示）
+    html += '<div class="row"><span class="k">周期性使用完</span><span class="v">'+d.periodic+'</span></div>';
+
+    // 备注
+    html += '<div class="row"><span class="k">备注</span><span class="v'+(d.remark==='-'?' placeholder':'')+'">'+d.remark+'</span></div>';
+    html += '</div>';
+
+    // 2. 出库仓库（仅展示，无查看链接）
+    html += '<div class="group">';
+    html += '<div class="group-title">出库仓库</div>';
+    html += '<div class="info-row"><span class="k">仓库</span><span class="v">'+d.wh+'</span></div>';
+    html += '</div>';
+
+    // 3. 出库清单（批次汇总表）
+    html += '<div class="group">';
+    html += '<div class="group-title">出库清单</div>';
+    html += '<div class="table-wrap"><div class="table-scroll"><table>';
+    html += '<thead><tr><th>序号</th><th>批次号</th><th>单价</th><th>出库数量</th></tr></thead><tbody>';
+    d.batches.forEach(function(b, i){
+      html += '<tr><td>'+(i+1)+'</td><td>'+b.bid+'</td><td>'+b.price+'元</td><td>'+b.qty+'</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+    html += '<div class="slide-hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l-6-6 6-6"/><path d="M15 6l6 6-6 6"/></svg>左右滑动查看完整数据</div>';
+    html += '</div>';
+
+    // 4. 出库表（按批次，每个批次一个子表）
+    html += '<div class="group">';
+    html += '<div class="group-title">出库表</div>';
+    d.batches.forEach(function(b, bi){
+      // 批次标题
+      html += '<div class="batch-sub-title">批次：'+b.bid+'（出库 '+b.qty+' 件）</div>';
+      // 子物料表
+      html += '<div class="table-wrap"><div class="table-scroll"><table>';
+      html += '<thead><tr><th>序号</th><th>子编号</th><th>物料二维码</th><th>操作</th></tr></thead><tbody>';
+      b.subs.forEach(function(s, si){
+        html += '<tr>'
+          + '<td>'+(si+1)+'</td>'
+          + '<td>'+s.no+'</td>'
+          + '<td>'+qrMiniSvg()+'</td>'
+          + '<td><div class="op-btns">'
+          +   '<span class="op-btn outline-blue" onclick="event.stopPropagation();downloadQr(\''+s.no+'\')">下载二维码</span>'
+          +   '<span class="op-btn outline-green" onclick="event.stopPropagation();goSubDetail(\''+s.no+'\')">详情</span>'
+          + '</div></td>'
+          + '</tr>';
+      });
+      html += '</tbody></table></div></div>';
+    });
+    html += '<div class="slide-hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l-6-6 6-6"/><path d="M15 6l6 6-6 6"/></svg>左右滑动查看完整数据</div>';
+    html += '</div>';
+
+    document.getElementById('content').innerHTML = html;
+  }
+
+  function downloadQr(code){
+    toast('子物料 '+code+' 二维码已下载');
+  }
+  function goSubDetail(no){
+    location.href = 'sub-material-detail.html?no=' + encodeURIComponent(no);
+  }
+
+  var toastTimer;
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  // 状态栏时间
+  (function(){
+    var now = new Date();
+    var hh = now.getHours().toString().padStart(2,'0');
+    var mm = now.getMinutes().toString().padStart(2,'0');
+    document.getElementById('stTime').textContent = hh + ':' + mm;
+  })();
+
+  render();
+</script>
+</body>
+</html>

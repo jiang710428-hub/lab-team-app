@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>仓库</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f1f4fa; color: #1f2329; }
+  .phone { position: relative; width: 375px; height: 812px; margin: 20px auto; background: #f1f4fa; border-radius: 30px; box-shadow: 0 6px 24px rgba(0,0,0,.12); overflow: hidden; }
+  .statusbar { height: 44px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #1f2329; background: #f1f4fa; }
+  .statusbar .right { display: flex; align-items: center; gap: 6px; }
+  .navbar { height: 44px; display: flex; align-items: center; justify-content: center; position: relative; background: #f1f4fa; }
+  .navbar .back { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .navbar .title { font-size: 17px; font-weight: 600; color: #2f7bff; }
+  .tabs { display: flex; align-items: center; padding: 4px 14px 0; background: #f1f4fa; }
+  .tab { flex: 1; text-align: center; font-size: 14px; color: #4a4f57; padding: 8px 0 10px; position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .tab.active { color: #2f7bff; font-weight: 600; }
+  .tab.active::after { content: ''; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 28px; height: 3px; background: #2f7bff; border-radius: 2px; }
+  .search-wrap { padding: 8px 14px 6px; background: #f1f4fa; }
+  .search { display: flex; align-items: center; gap: 6px; height: 36px; background: #fff; border: 1.5px solid #2f7bff; border-radius: 10px; padding: 0 10px; }
+  .search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; color: #1f2329; }
+  .search input::placeholder { color: #aab0bb; }
+  .search svg { color: #2f7bff; }
+  .stat-row { display: flex; gap: 8px; padding: 6px 14px 4px; }
+  .stat { flex: 1; background: #fff; border-radius: 10px; padding: 8px 10px; }
+  .stat .lbl { font-size: 11px; color: #8a8f99; margin-bottom: 2px; }
+  .stat .num { font-size: 18px; font-weight: 700; }
+  .stat.blue .lbl { color: #2f7bff; }
+  .stat.blue .num { color: #2f7bff; }
+  .stat.green .lbl { color: #5cb85c; }
+  .stat.green .num { color: #5cb85c; }
+  .stat.purple .lbl { color: #9b8cff; }
+  .stat.purple .num { color: #9b8cff; }
+  .list { padding: 8px 14px 110px; overflow-y: auto; height: calc(100% - 44px - 44px - 56px - 70px - 22px); }
+  .card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: transform .1s; -webkit-tap-highlight-color: transparent; }
+  .card:active { transform: scale(.98); }
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .card-title { display: flex; align-items: center; gap: 8px; }
+  .card-title .name { font-size: 15px; font-weight: 600; color: #1f2329; }
+  .status-tag { font-size: 11px; padding: 2px 7px; border-radius: 4px; }
+  .status-tag.on { background: #e8f5ec; color: #2f9e44; }
+  .status-tag.off { background: #fdecec; color: #ff3b30; }
+  .card-actions { display: flex; gap: 12px; }
+  .icon-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #8a8f99; -webkit-tap-highlight-color: transparent; }
+  .icon-btn:active { color: #2f7bff; }
+  .card-no { font-size: 12px; color: #8a8f99; margin-bottom: 8px; }
+  .info-row { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; color: #4a4f57; margin-bottom: 6px; }
+  .info-row svg { color: #aab0bb; flex-shrink: 0; margin-top: 1px; }
+  .info-row .lbl { color: #8a8f99; flex-shrink: 0; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; padding-top: 8px; border-top: 1px dashed #eef0f4; }
+  .remark { font-size: 12px; color: #8a8f99; flex: 1; padding-right: 10px; }
+  .stock-pill { font-size: 12px; color: #2f7bff; background: #e8f0ff; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
+  .fab { position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; background: #2f7bff; color: #fff; height: 46px; width: 220px; border-radius: 23px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 16px rgba(47, 123, 255, .35); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s; }
+  .fab:active { transform: translateX(-50%) scale(.96); }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .modal { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 18px 16px 28px; animation: slideUp .25s ease; max-height: 90%; overflow-y: auto; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: -6px auto 14px; }
+  .modal h4 { font-size: 16px; text-align: center; margin-bottom: 14px; color: #1f2329; }
+  .form-item { margin-bottom: 12px; }
+  .form-item .lbl { font-size: 13px; color: #4a4f57; margin-bottom: 6px; }
+  .form-item .lbl .req { color: #ff3b30; }
+  .form-item .ipt { width: 100%; height: 38px; background: #f6f7f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 10px; font-size: 14px; color: #1f2329; outline: 0; }
+  .form-item .ipt:focus { border-color: #2f7bff; background: #fff; }
+  .form-item .ipt[disabled] { color: #8a8f99; background: #f1f4fa; }
+  .form-item textarea.ipt { height: 76px; padding: 8px 10px; resize: none; }
+  .switch-row { display: flex; gap: 8px; }
+  .switch-opt { flex: 1; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; color: #4a4f57; background: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .switch-opt.active { border-color: #2f7bff; background: #e8f0ff; color: #2f7bff; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+  .btn { flex: 1; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .btn.cancel { background: #f3f4f6; color: #4a4f57; }
+  .btn.confirm { background: #2f7bff; color: #fff; }
+  .btn:active { transform: scale(.97); }
+  .btn.danger { background: #ff3b30; color: #fff; }
+  .confirm-mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 60; display: none; align-items: center; justify-content: center; padding: 0 40px; }
+  .confirm-mask.show { display: flex; }
+  .confirm-box { width: 100%; max-width: 280px; background: #fff; border-radius: 14px; overflow: hidden; animation: pop .2s ease; }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .confirm-title { font-size: 16px; font-weight: 600; text-align: center; padding: 22px 20px 8px; color: #1f2329; }
+  .confirm-msg { font-size: 14px; text-align: center; padding: 0 20px 20px; color: #8a8f99; line-height: 1.5; }
+  .confirm-btns { display: flex; border-top: 1px solid #eef0f4; }
+  .confirm-btns .cb { flex: 1; height: 46px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .confirm-btns .cb.cancel { color: #4a4f57; border-right: 1px solid #eef0f4; }
+  .confirm-btns .cb.ok { color: #ff3b30; }
+  .confirm-btns .cb:active { background: #f3f5f9; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- 状态栏 -->
+  <div class="statusbar">
+    <span>12:00</span>
+    <span class="right">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22l4-12 4 12H2zm10 0V8l8 14h-8z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.5 3 3.7 5.7 2 9.5L12 22l10-12.5C20.3 5.7 16.5 3 12 3z"/></svg>
+      <svg width="22" height="12" viewBox="0 0 22 12"><rect x="0" y="1" width="18" height="10" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="3" width="14" height="6" rx="1" fill="currentColor"/><rect x="20" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <!-- 导航栏 -->
+  <div class="navbar">
+    <div class="back" onclick="history.back()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2f7bff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">仓库</div>
+  </div>
+
+  <!-- 5个Tab -->
+  <div class="tabs">
+    <div class="tab" onclick="goOther('物料列表')">物料列表</div>
+    <div class="tab" onclick="goOther('入库')">入库</div>
+    <div class="tab" onclick="goOther('出库')">出库</div>
+    <div class="tab" onclick="goOther('类目')">类目</div>
+    <div class="tab active">仓库</div>
+  </div>
+
+  <!-- 搜索 -->
+  <div class="search-wrap">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="请搜索仓库名称、仓库编号、地址或负责人" onkeydown="if(event.key==='Enter')doSearch()" />
+    </div>
+  </div>
+
+  <!-- 统计 -->
+  <div class="stat-row">
+    <div class="stat blue"><div class="lbl">总仓库数</div><div class="num" id="statTotal">3</div></div>
+    <div class="stat green"><div class="lbl">启用中</div><div class="num" id="statOn">2</div></div>
+    <div class="stat purple"><div class="lbl">存货总量</div><div class="num" id="statStock">233</div></div>
+  </div>
+
+  <!-- 仓库列表 -->
+  <div class="list" id="whList"></div>
+
+  <!-- 添加 -->
+  <div class="fab" onclick="openForm()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    添加仓库
+  </div>
+
+  <!-- 表单弹窗 -->
+  <div class="mask" id="modalForm" onclick="if(event.target===this)closeForm()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-bar"></div>
+      <h4 id="formTitle">新增仓库</h4>
+      <div class="form-item">
+        <div class="lbl"><span class="req">*</span> 仓库名称</div>
+        <input class="ipt" id="fName" placeholder="请输入仓库名称" />
+      </div>
+      <div class="form-item">
+        <div class="lbl">仓库编号 <span style="color:#8a8f99;font-size:11px;">（自动生成，不可编辑）</span></div>
+        <input class="ipt" id="fNo" disabled placeholder="保存后自动生成" />
+      </div>
+      <div class="form-item">
+        <div class="lbl"><span class="req">*</span> 负责人</div>
+        <input class="ipt" id="fManager" placeholder="请输入负责人姓名" />
+      </div>
+      <div class="form-item">
+        <div class="lbl"><span class="req">*</span> 仓库地址</div>
+        <input class="ipt" id="fAddr" placeholder="请输入仓库地址" />
+      </div>
+      <div class="form-item">
+        <div class="lbl"><span class="req">*</span> 运行状态</div>
+        <div class="switch-row">
+          <div class="switch-opt active" id="optOn" onclick="pickStatus('on')">启用</div>
+          <div class="switch-opt" id="optOff" onclick="pickStatus('off')">禁用</div>
+        </div>
+      </div>
+      <div class="form-item">
+        <div class="lbl">备注说明</div>
+        <textarea class="ipt" id="fRemark" placeholder="请输入备注说明（选填）"></textarea>
+      </div>
+      <div class="modal-actions">
+        <div class="btn cancel" onclick="closeForm()">取消</div>
+        <div class="btn confirm" onclick="saveForm()">保存</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认弹窗 -->
+  <div class="confirm-mask" id="confirmDel" onclick="if(event.target===this)closeConfirm()">
+    <div class="confirm-box">
+      <div class="confirm-title" id="confirmTitle">确认删除</div>
+      <div class="confirm-msg" id="confirmMsg">删除后不可恢复，是否继续？</div>
+      <div class="confirm-btns">
+        <div class="cb cancel" onclick="closeConfirm()">取消</div>
+        <div class="cb ok" onclick="confirmDelete()">删除</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  // 仓库数据
+  var warehouses = [
+    { no:'WH-001', name:'乃东路一号库', manager:'扎西顿珠', addr:'山南市乃东路21号', status:'on', remark:'存放湿试剂与核心耗材', stock:159, related:2 },
+    { no:'WH-002', name:'泽当中心库', manager:'次仁旺姆', addr:'山南市泽当大道108号', status:'on', remark:'大型物料主要取货仓', stock:74, related:3 },
+    { no:'WH-003', name:'嘎嘎仓库', manager:'扎西顿珠', addr:'', status:'off', remark:'', stock:0, related:0 }
+  ];
+  var currentList = warehouses.slice();
+  var formStatus = 'on';
+  var editingIndex = -1;
+
+  function statusTagHtml(s){ return s==='on' ? '<span class="status-tag on">启用</span>' : '<span class="status-tag off">禁用</span>'; }
+  function rowIcon(type){
+    return type==='user' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>'
+      : type==='addr' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>'
+      : type==='link' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>'
+      : '';
+  }
+
+  function render(list){
+    var wrap = document.getElementById('whList');
+    if(!list.length){
+      wrap.innerHTML = '<div style="text-align:center;color:#8a8f99;padding:60px 0;font-size:14px;">暂无匹配的仓库</div>';
+    } else {
+      wrap.innerHTML = list.map(function(w, i){
+        var realIdx = warehouses.indexOf(w);
+        return '<div class="card" onclick="goDetail('+realIdx+')">'
+          + '<div class="card-head">'
+          +   '<div class="card-title"><span class="name">'+w.name+'</span>'+statusTagHtml(w.status)+'</div>'
+          +   '<div class="card-actions">'
+          +     '<div class="icon-btn" onclick="event.stopPropagation();editWh('+i+')" title="编辑"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"/></svg></div>'
+          +     '<div class="icon-btn" onclick="event.stopPropagation();delWh('+i+')" title="删除"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></div>'
+          +   '</div>'
+          + '</div>'
+          + '<div class="card-no">'+w.no+'</div>'
+          + '<div class="info-row">'+rowIcon('user')+'<span class="lbl">负责人：</span>'+(w.manager||'—')+'</div>'
+          + '<div class="info-row">'+rowIcon('link')+'<span class="lbl">关联类目：</span>'+(w.related||0)+' 种</div>'
+          + (w.addr ? '<div class="info-row">'+rowIcon('addr')+'<span class="lbl">地址：</span>'+w.addr+'</div>' : '')
+          + '<div class="card-foot">'
+          +   '<div class="remark">'+(w.remark?('备注：'+w.remark):'—')+'</div>'
+          +   '<div class="stock-pill">库存总量：'+(w.stock||0)+'</div>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
+    document.getElementById('statTotal').textContent = list.length;
+    document.getElementById('statOn').textContent = list.filter(function(w){return w.status==='on';}).length;
+    document.getElementById('statStock').textContent = list.reduce(function(s,w){return s+(w.stock||0);},0);
+  }
+
+  function doSearch(){
+    var kw = document.getElementById('searchInput').value.trim().toLowerCase();
+    if(!kw){ currentList = warehouses.slice(); render(currentList); return; }
+    currentList = warehouses.filter(function(w){
+      return (w.name||'').toLowerCase().indexOf(kw) > -1
+        || (w.no||'').toLowerCase().indexOf(kw) > -1
+        || (w.addr||'').toLowerCase().indexOf(kw) > -1
+        || (w.manager||'').toLowerCase().indexOf(kw) > -1;
+    });
+    render(currentList);
+    toast(currentList.length ? '找到 '+currentList.length+' 个仓库' : '未找到匹配仓库');
+  }
+
+  function goOther(name){
+    if(name === '物料列表'){ location.href = 'material.html'; }
+    else if(name === '入库'){ location.href = 'inbound.html'; }
+    else if(name === '出库'){ location.href = 'outbound.html'; }
+    else { toast(name + '页面待开发'); }
+  }
+
+  function goDetail(idx){
+    location.href = 'warehouse-detail.html?idx=' + idx;
+  }
+
+  function pickStatus(s){
+    formStatus = s;
+    document.getElementById('optOn').classList.toggle('active', s==='on');
+    document.getElementById('optOff').classList.toggle('active', s==='off');
+  }
+
+  function openForm(){
+    editingIndex = -1;
+    document.getElementById('formTitle').textContent = '新增仓库';
+    document.getElementById('fName').value = '';
+    document.getElementById('fNo').value = '';
+    document.getElementById('fManager').value = '';
+    document.getElementById('fAddr').value = '';
+    document.getElementById('fRemark').value = '';
+    pickStatus('on');
+    document.getElementById('modalForm').classList.add('show');
+  }
+
+  function editWh(i){
+    var w = currentList[i];
+    var realIdx = warehouses.findIndex(function(x){ return x === w; });
+    editingIndex = realIdx;
+    document.getElementById('formTitle').textContent = '编辑仓库';
+    document.getElementById('fName').value = w.name;
+    document.getElementById('fNo').value = w.no;
+    document.getElementById('fManager').value = w.manager || '';
+    document.getElementById('fAddr').value = w.addr || '';
+    document.getElementById('fRemark').value = w.remark || '';
+    pickStatus(w.status);
+    document.getElementById('modalForm').classList.add('show');
+  }
+
+  function closeForm(){ document.getElementById('modalForm').classList.remove('show'); editingIndex = -1; }
+
+  function genNo(){
+    var max = 0;
+    warehouses.forEach(function(w){
+      var m = (w.no||'').match(/WH-(\d+)/);
+      if(m){ max = Math.max(max, parseInt(m[1],10)); }
+    });
+    return 'WH-' + String(max+1).padStart(3,'0');
+  }
+
+  function saveForm(){
+    var name = document.getElementById('fName').value.trim();
+    var manager = document.getElementById('fManager').value.trim();
+    var addr = document.getElementById('fAddr').value.trim();
+    var remark = document.getElementById('fRemark').value.trim();
+    if(!name){ toast('请输入仓库名称'); return; }
+    if(!manager){ toast('请输入负责人'); return; }
+    if(!addr){ toast('请输入仓库地址'); return; }
+
+    if(editingIndex >= 0){
+      var w = warehouses[editingIndex];
+      w.name = name; w.manager = manager; w.addr = addr; w.status = formStatus; w.remark = remark;
+      toast('已保存：' + name);
+    } else {
+      warehouses.unshift({
+        no: genNo(), name: name, manager: manager, addr: addr,
+        status: formStatus, remark: remark, stock: 0, related: 0
+      });
+      toast('已添加：' + name);
+    }
+    currentList = warehouses.slice();
+    render(currentList);
+    closeForm();
+  }
+
+  var pendingDelIdx = -1;
+  function delWh(i){
+    var w = currentList[i];
+    if(w.stock > 0){
+      toast('仓库「'+w.name+'」存在库存（'+w.stock+'件），不可删除');
+      return;
+    }
+    pendingDelIdx = i;
+    document.getElementById('confirmTitle').textContent = '确认删除';
+    document.getElementById('confirmMsg').textContent = '删除仓库「'+w.name+'」后不可恢复，是否继续？';
+    document.getElementById('confirmDel').classList.add('show');
+  }
+  function closeConfirm(){
+    document.getElementById('confirmDel').classList.remove('show');
+    pendingDelIdx = -1;
+  }
+  function confirmDelete(){
+    if(pendingDelIdx < 0) return;
+    var w = currentList[pendingDelIdx];
+    var realIdx = warehouses.findIndex(function(x){ return x === w; });
+    warehouses.splice(realIdx, 1);
+    currentList = warehouses.slice();
+    render(currentList);
+    closeConfirm();
+    toast('已删除：' + w.name);
+  }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+
+  // 初始渲染
+  render(currentList);
+</script>
+</body>
+</html>

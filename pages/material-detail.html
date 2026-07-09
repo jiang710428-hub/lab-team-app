@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物料详情</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  html, body {
+    background: #e9eef5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif;
+    color: #1f2329;
+    display: flex; justify-content: center; min-height: 100vh;
+  }
+  body { padding: 24px 0; }
+  .phone {
+    width: 390px; min-height: 844px;
+    background: #f1f4fa;
+    border-radius: 44px;
+    box-shadow: 0 20px 50px rgba(20, 40, 80, 0.18);
+    overflow: hidden; position: relative; padding-bottom: 30px;
+  }
+  .status-bar { height: 44px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; }
+  .status-right { display: flex; align-items: center; gap: 6px; }
+  .status-right svg { display: block; }
+  .nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; height: 44px; padding: 0 8px; }
+  .nav .back { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #2f7bff; cursor: pointer; -webkit-tap-highlight-color: transparent; text-decoration: none; }
+  .nav .back:active { opacity: .5; }
+  .nav .title { text-align: center; font-size: 17px; font-weight: 600; color: #1f2329; }
+
+  .content { padding: 0 14px 120px; }
+
+  /* 二维码卡片 */
+  .qr-card { background: #fff; border-radius: 12px; padding: 18px 16px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 2px 6px rgba(20,40,80,.04); margin-bottom: 12px; }
+  .qr-img { width: 110px; height: 110px; margin-bottom: 14px; }
+  .save-btn { background: #2f7bff; color: #fff; height: 36px; padding: 0 28px; border-radius: 18px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s; }
+  .save-btn:active { background: #1f6ae8; }
+
+  /* 分组 */
+  .group { background: #fff; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(20,40,80,.04); overflow: hidden; }
+  .group-title { background: #eef2f7; padding: 10px 14px; font-size: 13px; font-weight: 600; color: #1f2329; }
+  .row { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; min-height: 44px; }
+  .row:last-child { border-bottom: 0; }
+  .row .k { color: #8a8f99; width: 70px; flex-shrink: 0; }
+  .row .v { color: #1f2329; font-weight: 500; flex: 1; text-align: right; word-break: break-all; }
+  .row .v.placeholder { color: #c8ccd4; font-weight: 400; }
+  .empty-tip { padding: 18px 14px; text-align: center; color: #c8ccd4; font-size: 13px; }
+
+  /* 库存信息 */
+  .wh-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #f0f2f5; }
+  .wh-row .k { font-size: 13px; color: #1f2329; }
+  .wh-chip { background: #e8f1ff; color: #2f7bff; font-size: 12px; padding: 4px 10px; border-radius: 4px; font-weight: 500; }
+
+  .search-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px 14px; border-bottom: 1px solid #f0f2f5; }
+  .search-box { background: #f3f5f9; border-radius: 8px; height: 32px; display: flex; align-items: center; padding: 0 10px; gap: 6px; }
+  .search-box svg { color: #8a8f99; flex-shrink: 0; }
+  .search-box input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 12px; color: #1f2329; }
+  .search-box input::placeholder { color: #b8bcc4; }
+  .filter-pill { background: #e8f1ff; color: #2f7bff; border-radius: 16px; height: 32px; padding: 0 12px; display: flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .filter-pill:active { background: #d6e6ff; }
+  .filter-pill svg { color: #2f7bff; }
+
+  /* 表格 - 支持左右滑动 */
+  .table-wrap { position: relative; overflow: hidden; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .table-scroll::-webkit-scrollbar { height: 4px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: #d6dbe3; border-radius: 2px; }
+  .table-scroll::-webkit-scrollbar-track { background: transparent; }
+  table { border-collapse: collapse; min-width: 100%; }
+  thead th { background: #f7f9fc; color: #8a8f99; font-size: 12px; font-weight: 500; padding: 10px 12px; text-align: left; white-space: nowrap; border-bottom: 1px solid #f0f2f5; position: sticky; top: 0; }
+  tbody td { padding: 12px; font-size: 12px; color: #1f2329; border-bottom: 1px solid #f0f2f5; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:active { background: #f7f9fc; }
+  .op-btns { display: flex; gap: 4px; }
+  .op-btn { padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; -webkit-tap-highlight-color: transparent; border: 1px solid; }
+  .op-btn.outline-blue { color: #2f7bff; border-color: #2f7bff; background: #fff; }
+  .op-btn.outline-blue:active { background: #e8f1ff; }
+  .op-btn.outline-green { color: #2a9d7e; border-color: #2a9d7e; background: #fff; }
+  .op-btn.outline-green:active { background: #e3f5ed; }
+  .qr-mini { width: 22px; height: 22px; display: inline-block; vertical-align: middle; }
+
+  /* 滑动提示 */
+  .slide-hint { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; font-size: 11px; color: #b8bcc4; background: #fafbfc; border-top: 1px solid #f0f2f5; }
+
+  /* 弹窗/Toast */
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .sheet { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 8px 0 20px; animation: slideUp .25s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 12px; }
+  .sheet-title { text-align: center; font-size: 15px; font-weight: 600; color: #1f2329; margin-bottom: 8px; }
+  .sheet-item { height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 22px; font-size: 15px; color: #1f2329; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .sheet-item:active { background: #f3f5f9; }
+  .sheet-item svg { color: #4a4f57; }
+  .sheet-cancel { margin-top: 6px; border-top: 8px solid #f1f4fa; height: 50px; display: flex; align-items: center; justify-content: center; color: #8a8f99; font-size: 15px; cursor: pointer; }
+  .modal-center { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: center; justify-content: center; padding: 0 24px; }
+  .modal-center.show { display: flex; }
+  .modal-box { width: 100%; background: #fff; border-radius: 14px; padding: 18px 16px 12px; animation: pop .2s ease; }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-box h4 { font-size: 16px; margin-bottom: 12px; text-align: center; }
+  .modal-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+  .modal-row:last-of-type { border-bottom: 0; }
+  .modal-row .k { color: #8a8f99; }
+  .modal-row .v { color: #1f2329; font-weight: 500; }
+  .modal-close { margin-top: 10px; height: 40px; border-radius: 8px; background: #2f7bff; color: #fff; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar">
+    <span>12:00</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0"  y="7" width="3" height="4" rx="0.5" fill="#1f2329"/><rect x="4.5" y="5" width="3" height="6" rx="0.5" fill="#1f2329"/><rect x="9" y="2.5" width="3" height="8.5" rx="0.5" fill="#1f2329"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#1f2329"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11"><path d="M8 10.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#1f2329"/><path d="M3.5 6.2a6.4 6.4 0 019 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M1 3.5a9.5 9.5 0 0114 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="#1f2329" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="#1f2329"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#1f2329" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="back" onclick="goBack()" aria-label="返回" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f2329" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">物料详情</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <div class="content">
+    <!-- 二维码卡片 -->
+    <div class="qr-card">
+      <svg class="qr-img" viewBox="0 0 100 100">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- 三个定位角 -->
+        <rect x="8" y="8" width="22" height="22" fill="#1f2329"/>
+        <rect x="12" y="12" width="14" height="14" fill="#fff"/>
+        <rect x="15" y="15" width="8" height="8" fill="#1f2329"/>
+        <rect x="70" y="8" width="22" height="22" fill="#1f2329"/>
+        <rect x="74" y="12" width="14" height="14" fill="#fff"/>
+        <rect x="77" y="15" width="8" height="8" fill="#1f2329"/>
+        <rect x="8" y="70" width="22" height="22" fill="#1f2329"/>
+        <rect x="12" y="74" width="14" height="14" fill="#fff"/>
+        <rect x="15" y="77" width="8" height="8" fill="#1f2329"/>
+        <!-- 数据点 -->
+        <g fill="#1f2329">
+          <rect x="36" y="8" width="4" height="4"/><rect x="42" y="8" width="4" height="4"/><rect x="50" y="8" width="4" height="4"/><rect x="58" y="8" width="4" height="4"/>
+          <rect x="36" y="14" width="4" height="4"/><rect x="46" y="14" width="4" height="4"/><rect x="54" y="14" width="4" height="4"/><rect x="62" y="14" width="4" height="4"/>
+          <rect x="40" y="20" width="4" height="4"/><rect x="48" y="20" width="4" height="4"/><rect x="56" y="20" width="4" height="4"/>
+          <rect x="8" y="36" width="4" height="4"/><rect x="16" y="36" width="4" height="4"/><rect x="24" y="36" width="4" height="4"/><rect x="32" y="36" width="4" height="4"/><rect x="40" y="36" width="4" height="4"/><rect x="48" y="36" width="4" height="4"/><rect x="56" y="36" width="4" height="4"/><rect x="64" y="36" width="4" height="4"/><rect x="72" y="36" width="4" height="4"/><rect x="80" y="36" width="4" height="4"/><rect x="88" y="36" width="4" height="4"/>
+          <rect x="12" y="42" width="4" height="4"/><rect x="20" y="42" width="4" height="4"/><rect x="28" y="42" width="4" height="4"/><rect x="36" y="42" width="4" height="4"/><rect x="44" y="42" width="4" height="4"/><rect x="52" y="42" width="4" height="4"/><rect x="60" y="42" width="4" height="4"/><rect x="76" y="42" width="4" height="4"/><rect x="84" y="42" width="4" height="4"/>
+          <rect x="8" y="48" width="4" height="4"/><rect x="24" y="48" width="4" height="4"/><rect x="32" y="48" width="4" height="4"/><rect x="48" y="48" width="4" height="4"/><rect x="56" y="48" width="4" height="4"/><rect x="64" y="48" width="4" height="4"/><rect x="72" y="48" width="4" height="4"/><rect x="88" y="48" width="4" height="4"/>
+          <rect x="16" y="54" width="4" height="4"/><rect x="28" y="54" width="4" height="4"/><rect x="40" y="54" width="4" height="4"/><rect x="52" y="54" width="4" height="4"/><rect x="60" y="54" width="4" height="4"/><rect x="68" y="54" width="4" height="4"/><rect x="80" y="54" width="4" height="4"/>
+          <rect x="8" y="60" width="4" height="4"/><rect x="20" y="60" width="4" height="4"/><rect x="32" y="60" width="4" height="4"/><rect x="44" y="60" width="4" height="4"/><rect x="56" y="60" width="4" height="4"/><rect x="64" y="60" width="4" height="4"/><rect x="76" y="60" width="4" height="4"/><rect x="88" y="60" width="4" height="4"/>
+          <rect x="36" y="70" width="4" height="4"/><rect x="44" y="70" width="4" height="4"/><rect x="52" y="70" width="4" height="4"/><rect x="60" y="70" width="4" height="4"/><rect x="68" y="70" width="4" height="4"/><rect x="76" y="70" width="4" height="4"/><rect x="84" y="70" width="4" height="4"/>
+          <rect x="40" y="76" width="4" height="4"/><rect x="48" y="76" width="4" height="4"/><rect x="56" y="76" width="4" height="4"/><rect x="64" y="76" width="4" height="4"/><rect x="72" y="76" width="4" height="4"/><rect x="80" y="76" width="4" height="4"/>
+          <rect x="36" y="82" width="4" height="4"/><rect x="44" y="82" width="4" height="4"/><rect x="52" y="82" width="4" height="4"/><rect x="60" y="82" width="4" height="4"/><rect x="76" y="82" width="4" height="4"/><rect x="88" y="82" width="4" height="4"/>
+          <rect x="40" y="88" width="4" height="4"/><rect x="48" y="88" width="4" height="4"/><rect x="56" y="88" width="4" height="4"/><rect x="64" y="88" width="4" height="4"/><rect x="72" y="88" width="4" height="4"/><rect x="80" y="88" width="4" height="4"/><rect x="88" y="88" width="4" height="4"/>
+        </g>
+      </svg>
+      <div class="save-btn" onclick="toast('二维码已保存到相册')">保存</div>
+    </div>
+
+    <!-- 基础信息 -->
+    <div class="group">
+      <div class="group-title">基础信息</div>
+      <div class="row"><span class="k">名称</span><span class="v" id="bName">一次性使用无菌注射器</span></div>
+      <div class="row"><span class="k">编号</span><span class="v" id="bNo">hc-1001</span></div>
+      <div class="row"><span class="k">类目</span><span class="v" id="bCat">医疗耗材</span></div>
+      <div class="row"><span class="k">规格</span><span class="v" id="bSpec">5ml</span></div>
+      <div class="row"><span class="k">单位</span><span class="v" id="bUnit">支</span></div>
+      <div class="row"><span class="k">库存</span><span class="v" id="bStock">150</span></div>
+      <div class="row"><span class="k">预警值</span><span class="v placeholder" id="bAlert">-</span></div>
+      <div class="row"><span class="k">备注</span><span class="v placeholder" id="bRemark">-</span></div>
+    </div>
+
+    <!-- 物料自定义属性 -->
+    <div class="group">
+      <div class="group-title">物料自定义属性</div>
+      <div class="empty-tip">无自定义属性</div>
+    </div>
+
+    <!-- 库存信息 -->
+    <div class="group">
+      <div class="group-title">库存信息</div>
+      <div class="wh-row">
+        <span class="k">存放仓库</span>
+        <span class="wh-chip" id="whChip">乃东路一号库</span>
+      </div>
+      <div class="search-row">
+        <div class="search-box">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="subSearch" placeholder="请输入批次号、子编号" onkeydown="if(event.key==='Enter')doSubSearch()" />
+        </div>
+        <div class="filter-pill" onclick="openWh()">
+          <span>全部</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll" id="tableScroll">
+          <table>
+            <thead>
+              <tr>
+                <th>序号</th>
+                <th>子编号</th>
+                <th>物料二维码</th>
+                <th>有效期至</th>
+                <th>批次号</th>
+                <th>单价</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="subTbody"></tbody>
+          </table>
+        </div>
+        <div class="slide-hint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l-6-6 6-6"/><path d="M15 6l6 6-6 6"/></svg>
+          左右滑动查看完整数据
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 失效状态筛选 -->
+  <div class="mask" id="sheetWh" onclick="if(event.target===this)closeSheet('sheetWh')">
+    <div class="sheet">
+      <div class="sheet-bar"></div>
+      <div class="sheet-title">筛选条件</div>
+      <div class="sheet-item" onclick="chooseExpiry('全部')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+        全部
+      </div>
+      <div class="sheet-item" onclick="chooseExpiry('15天内失效')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff8a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        15天内失效
+      </div>
+      <div class="sheet-item" onclick="chooseExpiry('已失效')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 8l8 8M16 8l-8 8"/></svg>
+        已失效
+      </div>
+      <div class="sheet-cancel" onclick="closeSheet('sheetWh')">取消</div>
+    </div>
+  </div>
+
+  <!-- 行操作 -->
+  <div class="mask" id="sheetRowOp" onclick="if(event.target===this)closeSheet('sheetRowOp')">
+    <div class="sheet">
+      <div class="sheet-bar"></div>
+      <div class="sheet-title" id="rowOpTitle">子物料操作</div>
+      <div class="sheet-item" onclick="rowOp('下载二维码')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        下载二维码
+      </div>
+      <div class="sheet-item" onclick="rowOp('查看详情')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
+        查看详情
+      </div>
+      <div class="sheet-cancel" onclick="closeSheet('sheetRowOp')">取消</div>
+    </div>
+  </div>
+
+  <!-- 子物料详情 -->
+  <div class="modal-center" id="modalSub" onclick="if(event.target===this)closeModal('modalSub')">
+    <div class="modal-box">
+      <h4 id="subModalTitle">子物料详情</h4>
+      <div id="subModalBody"></div>
+      <div class="modal-close" onclick="closeModal('modalSub')">关闭</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  // 返回：直接回退一步，避免 location.href 导致历史栈堆积
+  function goBack(){
+    history.back();
+  }
+
+  // 子物料数据（参考当前日期 2026-07-08）
+  var subItems = [
+    { no:'A001', expiry:'2026-07-20', batch:'B20250101', price:2.50 },
+    { no:'A002', expiry:'2026-07-15', batch:'B20250102', price:2.50 },
+    { no:'A003', expiry:'2026-06-30', batch:'B20250103', price:2.80 },
+    { no:'A004', expiry:'2025-12-31', batch:'B20240104', price:2.50 },
+    { no:'A005', expiry:'2026-08-20', batch:'B20240105', price:2.60 },
+    { no:'A006', expiry:'2026-07-22', batch:'B20250106', price:2.50 },
+    { no:'A007', expiry:'2027-01-25', batch:'B20250107', price:2.70 }
+  ];
+  var currentExpiry = '全部';
+  var currentSubs = subItems.slice();
+
+  // 判断失效状态
+  var NOW = new Date('2026-07-08');
+  function expiryStatus(dateStr){
+    var d = new Date(dateStr);
+    var diff = (d - NOW) / (1000*60*60*24);
+    if(diff < 0) return 'expired';
+    if(diff <= 15) return 'soon';
+    return 'ok';
+  }
+  function expiryColor(dateStr){
+    var st = expiryStatus(dateStr);
+    if(st === 'expired') return 'color:#ff3b30;';
+    if(st === 'soon') return 'color:#ff8a00;';
+    return '';
+  }
+  function expiryBadge(dateStr){
+    var st = expiryStatus(dateStr);
+    if(st === 'expired') return ' <span style="font-size:10px;color:#fff;background:#ff3b30;padding:1px 5px;border-radius:3px;margin-left:4px;white-space:nowrap;">失效</span>';
+    if(st === 'soon') return ' <span style="font-size:10px;color:#fff;background:#ff8a00;padding:1px 5px;border-radius:3px;margin-left:4px;white-space:nowrap;">即将失效</span>';
+    return '';
+  }
+
+  function renderSubTable(arr){
+    var tb = document.getElementById('subTbody');
+    if(!arr.length){
+      tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#8a8f99;padding:24px 0;">暂无匹配的子物料</td></tr>';
+      return;
+    }
+    tb.innerHTML = arr.map(function(s, i){
+      return '<tr onclick="openRowOp('+i+')">'
+        + '<td>'+(i+1)+'</td>'
+        + '<td>'+s.no+'</td>'
+        + '<td>'+qrMiniSvg()+'</td>'
+        + '<td style="'+expiryColor(s.expiry)+'">'+s.expiry+expiryBadge(s.expiry)+'</td>'
+        + '<td>'+s.batch+'</td>'
+        + '<td>¥'+s.price.toFixed(2)+'</td>'
+        + '<td><div class="op-btns">'
+        +   '<span class="op-btn outline-blue" onclick="event.stopPropagation();quickAct(\'download\','+i+')">下载二维码</span>'
+        +   '<span class="op-btn outline-green" onclick="event.stopPropagation();quickAct(\'view\','+i+')">详情</span>'
+        + '</div></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function qrMiniSvg(){
+    return '<svg class="qr-mini" viewBox="0 0 100 100">'
+      + '<rect width="100" height="100" fill="#fff"/>'
+      + '<rect x="8" y="8" width="22" height="22" fill="#1f2329"/><rect x="12" y="12" width="14" height="14" fill="#fff"/><rect x="15" y="15" width="8" height="8" fill="#1f2329"/>'
+      + '<rect x="70" y="8" width="22" height="22" fill="#1f2329"/><rect x="74" y="12" width="14" height="14" fill="#fff"/><rect x="77" y="15" width="8" height="8" fill="#1f2329"/>'
+      + '<rect x="8" y="70" width="22" height="22" fill="#1f2329"/><rect x="12" y="74" width="14" height="14" fill="#fff"/><rect x="15" y="77" width="8" height="8" fill="#1f2329"/>'
+      + '<g fill="#1f2329">'
+      + '<rect x="36" y="8" width="4" height="4"/><rect x="46" y="8" width="4" height="4"/><rect x="56" y="8" width="4" height="4"/>'
+      + '<rect x="40" y="20" width="4" height="4"/><rect x="50" y="20" width="4" height="4"/><rect x="60" y="20" width="4" height="4"/>'
+      + '<rect x="8" y="36" width="4" height="4"/><rect x="20" y="36" width="4" height="4"/><rect x="32" y="36" width="4" height="4"/><rect x="44" y="36" width="4" height="4"/><rect x="56" y="36" width="4" height="4"/><rect x="68" y="36" width="4" height="4"/><rect x="80" y="36" width="4" height="4"/><rect x="88" y="36" width="4" height="4"/>'
+      + '<rect x="14" y="48" width="4" height="4"/><rect x="26" y="48" width="4" height="4"/><rect x="38" y="48" width="4" height="4"/><rect x="50" y="48" width="4" height="4"/><rect x="62" y="48" width="4" height="4"/><rect x="74" y="48" width="4" height="4"/><rect x="86" y="48" width="4" height="4"/>'
+      + '<rect x="20" y="60" width="4" height="4"/><rect x="32" y="60" width="4" height="4"/><rect x="44" y="60" width="4" height="4"/><rect x="56" y="60" width="4" height="4"/><rect x="68" y="60" width="4" height="4"/><rect x="80" y="60" width="4" height="4"/>'
+      + '<rect x="40" y="72" width="4" height="4"/><rect x="52" y="72" width="4" height="4"/><rect x="64" y="72" width="4" height="4"/><rect x="76" y="72" width="4" height="4"/>'
+      + '<rect x="44" y="84" width="4" height="4"/><rect x="56" y="84" width="4" height="4"/><rect x="68" y="84" width="4" height="4"/><rect x="80" y="84" width="4" height="4"/>'
+      + '</g></svg>';
+  }
+
+  function applyFilters(){
+    var kw = document.getElementById('subSearch').value.trim().toLowerCase();
+    currentSubs = subItems.filter(function(s){
+      var kwOk = !kw || s.no.toLowerCase().indexOf(kw) > -1 || s.batch.toLowerCase().indexOf(kw) > -1;
+      var expOk = true;
+      if(currentExpiry === '15天内失效'){ expOk = expiryStatus(s.expiry) === 'soon'; }
+      else if(currentExpiry === '已失效'){ expOk = expiryStatus(s.expiry) === 'expired'; }
+      return kwOk && expOk;
+    });
+    renderSubTable(currentSubs);
+  }
+
+  function doSubSearch(){
+    applyFilters();
+    toast(currentSubs.length ? '找到 '+currentSubs.length+' 条子物料' : '未找到匹配子物料');
+  }
+
+  function openWh(){ openSheet('sheetWh'); }
+  function chooseExpiry(type){
+    closeSheet('sheetWh');
+    currentExpiry = type;
+    document.querySelector('.filter-pill span').textContent = type;
+    applyFilters();
+    toast('筛选：' + type + '（'+currentSubs.length+'条）');
+  }
+
+  function openRowOp(i){
+    var s = currentSubs[i];
+    document.getElementById('rowOpTitle').textContent = '子物料 ' + s.no;
+    window._curRow = i;
+    openSheet('sheetRowOp');
+  }
+  function rowOp(name){
+    closeSheet('sheetRowOp');
+    var i = window._curRow;
+    var s = currentSubs[i];
+    if(name === '下载二维码'){
+      toast('子物料 '+s.no+' 二维码已下载');
+    } else {
+      window.location.href = 'sub-material-detail.html?no=' + encodeURIComponent(s.no);
+    }
+  }
+  function quickAct(type, i){
+    var s = currentSubs[i];
+    if(type === 'download'){ toast('子物料 '+s.no+' 二维码已下载'); }
+    else {
+      // 跳转到子物料详情页
+      window.location.href = 'sub-material-detail.html?no=' + encodeURIComponent(s.no);
+    }
+  }
+
+  function showSubDetail(i){
+    var s = currentSubs[i];
+    document.getElementById('subModalTitle').textContent = '子物料详情 · ' + s.no;
+    document.getElementById('subModalBody').innerHTML =
+      '<div class="modal-row"><span class="k">子编号</span><span class="v">'+s.no+'</span></div>'
+      + '<div class="modal-row"><span class="k">批次号</span><span class="v">'+s.batch+'</span></div>'
+      + '<div class="modal-row"><span class="k">有效期至</span><span class="v">'+s.expiry+'</span></div>'
+      + '<div class="modal-row"><span class="k">单价</span><span class="v">¥'+s.price.toFixed(2)+'</span></div>'
+      + '<div class="modal-row"><span class="k">存放仓库</span><span class="v">乃东路一号库</span></div>';
+    openModal('modalSub');
+  }
+
+  function openSheet(id){ document.getElementById(id).classList.add('show'); }
+  function closeSheet(id){ document.getElementById(id).classList.remove('show'); }
+  function openModal(id){ document.getElementById(id).classList.add('show'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+  var toastTimer;
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  renderSubTable(currentSubs);
+</script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>子物料详情</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  html, body {
+    background: #e9eef5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif;
+    color: #1f2329;
+    display: flex; justify-content: center; min-height: 100vh;
+  }
+  body { padding: 24px 0; }
+  .phone {
+    width: 390px; min-height: 844px;
+    background: #f1f4fa;
+    border-radius: 44px;
+    box-shadow: 0 20px 50px rgba(20, 40, 80, 0.18);
+    overflow: hidden; position: relative; padding-bottom: 30px;
+  }
+  .status-bar { height: 44px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; }
+  .status-right { display: flex; align-items: center; gap: 6px; }
+  .status-right svg { display: block; }
+  .nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; height: 44px; padding: 0 8px; }
+  .nav .back { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #1f2329; cursor: pointer; -webkit-tap-highlight-color: transparent; text-decoration: none; }
+  .nav .back:active { opacity: .5; }
+  .nav .title { text-align: center; font-size: 17px; font-weight: 600; color: #1f2329; }
+
+  .content { padding: 0 14px 120px; }
+
+  /* 分组 */
+  .group { background: #fff; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(20,40,80,.04); overflow: hidden; }
+  .group-title { background: #eef2f7; padding: 10px 14px; font-size: 13px; font-weight: 600; color: #1f2329; }
+  .row { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; min-height: 44px; }
+  .row:last-child { border-bottom: 0; }
+  .row .k { color: #8a8f99; width: 70px; flex-shrink: 0; }
+  .row .v { color: #1f2329; font-weight: 500; flex: 1; text-align: right; word-break: break-all; }
+  .row .v.placeholder { color: #c8ccd4; font-weight: 400; }
+  .row .v.expired { color: #ff3b30; }
+  .empty-tip { padding: 18px 14px; text-align: center; color: #c8ccd4; font-size: 13px; }
+
+  /* 二维码区块（占满一整行） */
+  .qr-row { display: flex; align-items: center; justify-content: space-between; padding: 14px; border-bottom: 1px solid #f0f2f5; }
+  .qr-row .left { display: flex; align-items: center; gap: 12px; }
+  .qr-row .qr-mini-box { width: 64px; height: 64px; border: 1px solid #e1e5ec; border-radius: 6px; padding: 4px; background: #fff; }
+  .download-btn { background: #e8f1ff; color: #2f7bff; font-size: 12px; padding: 6px 12px; border-radius: 14px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s; }
+  .download-btn:active { background: #d6e6ff; }
+
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar">
+    <span>12:00</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0"  y="7" width="3" height="4" rx="0.5" fill="#1f2329"/><rect x="4.5" y="5" width="3" height="6" rx="0.5" fill="#1f2329"/><rect x="9" y="2.5" width="3" height="8.5" rx="0.5" fill="#1f2329"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#1f2329"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11"><path d="M8 10.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#1f2329"/><path d="M3.5 6.2a6.4 6.4 0 019 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M1 3.5a9.5 9.5 0 0114 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="#1f2329" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="#1f2329"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#1f2329" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="back" id="backBtn" onclick="history.back()" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f2329" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <div class="title">子物料详情</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <div class="content">
+    <!-- 详细信息 -->
+    <div class="group">
+      <div class="group-title">详细信息</div>
+      <div class="row"><span class="k">存放仓库</span><span class="v" id="dWh">乃东路一号库</span></div>
+      <div class="row"><span class="k">批次号</span><span class="v" id="dBatch">pc0001</span></div>
+      <div class="row"><span class="k">单价</span><span class="v" id="dPrice">120 元</span></div>
+      <div class="row"><span class="k">子编号</span><span class="v" id="dNo">sub-bg-2001-01</span></div>
+      <div class="row"><span class="k">有效期至</span><span class="v expired" id="dExpiry">2026-04-20</span><span class="v expired" style="width:auto;flex:0 0 auto;margin-left:8px;font-size:12px;background:#ffeaea;padding:2px 6px;border-radius:3px;">失效</span></div>
+      <div class="row"><span class="k">库存状态</span><span class="v" id="dStatus">在库</span></div>
+      <div class="qr-row">
+        <div class="left">
+          <div class="qr-mini-box" id="qrBox"></div>
+        </div>
+        <div class="download-btn" onclick="toast('二维码已下载')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          下载二维码
+        </div>
+      </div>
+    </div>
+
+    <!-- 基础信息 -->
+    <div class="group">
+      <div class="group-title">基础信息</div>
+      <div class="row"><span class="k">物料名称</span><span class="v" id="bName">一次性使用无菌注射器</span></div>
+      <div class="row"><span class="k">编号</span><span class="v" id="bNo">bg-2001</span></div>
+      <div class="row"><span class="k">类目</span><span class="v" id="bCat">办公用品</span></div>
+      <div class="row"><span class="k">规格</span><span class="v" id="bSpec">500g/包</span></div>
+      <div class="row"><span class="k">单位</span><span class="v" id="bUnit">袋</span></div>
+    </div>
+
+    <!-- 自定义属性 -->
+    <div class="group">
+      <div class="group-title">物料自定义属性</div>
+      <div class="empty-tip">无自定义属性</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  // 从 URL 读取子编号
+  function getParam(name){
+    var m = location.search.match(new RegExp('[?&]'+name+'=([^&]*)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  // 子物料数据（与 material-detail.html 保持一致）
+  var subItems = {
+    'A001': { wh:'乃东路一号库', batch:'B20250101', price:'2.50 元', no:'sub-bg-2001-01', expiry:'2026-07-20', status:'在库', parentName:'一次性使用无菌注射器', parentNo:'bg-2001', parentCat:'医疗耗材', parentSpec:'5ml', parentUnit:'支' },
+    'A002': { wh:'乃东路一号库', batch:'B20250102', price:'2.50 元', no:'sub-bg-2001-02', expiry:'2026-07-15', status:'已出库', parentName:'一次性使用无菌注射器', parentNo:'bg-2001', parentCat:'医疗耗材', parentSpec:'5ml', parentUnit:'支' },
+    'A003': { wh:'乃东路一号库', batch:'B20250103', price:'2.80 元', no:'sub-bg-2001-03', expiry:'2026-06-30', status:'已出库', parentName:'一次性使用无菌注射器', parentNo:'bg-2001', parentCat:'医疗耗材', parentSpec:'5ml', parentUnit:'支' },
+    'A004': { wh:'泽当中心库', batch:'B20240104', price:'2.50 元', no:'sub-bg-2001-04', expiry:'2025-12-31', status:'已出库', parentName:'一次性使用无菌注射器', parentNo:'bg-2001', parentCat:'医疗耗材', parentSpec:'5ml', parentUnit:'支' },
+    'A005': { wh:'乃东路一号库', batch:'B20240105', price:'2.60 元', no:'sub-bg-2001-05', expiry:'2026-08-20', status:'在库', parentName:'一次性使用无菌注射器', parentNo:'bg-2001', parentCat:'医疗耗材', parentSpec:'5ml', parentUnit:'支' },
+    'A006': { wh:'泽当中心库', batch:'B20250106', price:'2.50 元', no:'sub-bg-2001-06', expiry:'2026-07-22', status:'在库', parentName:'一次性使用无菌注射器', parentNo:'bg-2001', parentCat:'医疗耗材', parentSpec:'5ml', parentUnit:'支' },
+    'A007': { wh:'乃东路一号库', batch:'B20250107', price:'2.70 元', no:'sub-bg-2001-07', expiry:'2027-01-25', status:'在库', parentName:'一次性使用无菌注射器', parentNo:'bg-2001', parentCat:'医疗耗材', parentSpec:'5ml', parentUnit:'支' }
+  };
+
+  // 失效状态判断
+  var NOW = new Date('2026-07-08');
+  function statusOf(dateStr){
+    var d = new Date(dateStr);
+    var diff = (d - NOW) / (1000*60*60*24);
+    if(diff < 0) return 'expired';
+    if(diff <= 15) return 'soon';
+    return 'ok';
+  }
+
+  function renderQr(){
+    document.getElementById('qrBox').innerHTML =
+      '<svg viewBox="0 0 100 100" width="100%" height="100%">'
+      + '<rect width="100" height="100" fill="#fff"/>'
+      + '<rect x="8" y="8" width="22" height="22" fill="#1f2329"/><rect x="12" y="12" width="14" height="14" fill="#fff"/><rect x="15" y="15" width="8" height="8" fill="#1f2329"/>'
+      + '<rect x="70" y="8" width="22" height="22" fill="#1f2329"/><rect x="74" y="12" width="14" height="14" fill="#fff"/><rect x="77" y="15" width="8" height="8" fill="#1f2329"/>'
+      + '<rect x="8" y="70" width="22" height="22" fill="#1f2329"/><rect x="12" y="74" width="14" height="14" fill="#fff"/><rect x="15" y="77" width="8" height="8" fill="#1f2329"/>'
+      + '<g fill="#1f2329">'
+      + '<rect x="36" y="8" width="4" height="4"/><rect x="46" y="8" width="4" height="4"/><rect x="56" y="8" width="4" height="4"/>'
+      + '<rect x="40" y="20" width="4" height="4"/><rect x="50" y="20" width="4" height="4"/><rect x="60" y="20" width="4" height="4"/>'
+      + '<rect x="8" y="36" width="4" height="4"/><rect x="20" y="36" width="4" height="4"/><rect x="32" y="36" width="4" height="4"/><rect x="44" y="36" width="4" height="4"/><rect x="56" y="36" width="4" height="4"/><rect x="68" y="36" width="4" height="4"/><rect x="80" y="36" width="4" height="4"/><rect x="88" y="36" width="4" height="4"/>'
+      + '<rect x="14" y="48" width="4" height="4"/><rect x="26" y="48" width="4" height="4"/><rect x="38" y="48" width="4" height="4"/><rect x="50" y="48" width="4" height="4"/><rect x="62" y="48" width="4" height="4"/><rect x="74" y="48" width="4" height="4"/><rect x="86" y="48" width="4" height="4"/>'
+      + '<rect x="20" y="60" width="4" height="4"/><rect x="32" y="60" width="4" height="4"/><rect x="44" y="60" width="4" height="4"/><rect x="56" y="60" width="4" height="4"/><rect x="68" y="60" width="4" height="4"/><rect x="80" y="60" width="4" height="4"/>'
+      + '<rect x="40" y="72" width="4" height="4"/><rect x="52" y="72" width="4" height="4"/><rect x="64" y="72" width="4" height="4"/><rect x="76" y="72" width="4" height="4"/>'
+      + '<rect x="44" y="84" width="4" height="4"/><rect x="56" y="84" width="4" height="4"/><rect x="68" y="84" width="4" height="4"/><rect x="80" y="84" width="4" height="4"/>'
+      + '</g></svg>';
+  }
+
+  function fillData(){
+    var id = getParam('no') || 'A003'; // 默认显示一个已失效的样例
+    var d = subItems[id] || subItems['A003'];
+    document.getElementById('dWh').textContent = d.wh;
+    document.getElementById('dBatch').textContent = d.batch;
+    document.getElementById('dPrice').textContent = d.price;
+    document.getElementById('dNo').textContent = d.no;
+    document.getElementById('dExpiry').textContent = d.expiry;
+    document.getElementById('dStatus').textContent = d.status;
+    document.getElementById('dStatus').style.color = d.status === '在库' ? '#2a9d7e' : '#8a8f99';
+    document.getElementById('bName').textContent = d.parentName;
+    document.getElementById('bNo').textContent = d.parentNo;
+    document.getElementById('bCat').textContent = d.parentCat;
+    document.getElementById('bSpec').textContent = d.parentSpec;
+    document.getElementById('bUnit').textContent = d.parentUnit;
+
+    // 失效状态标签
+    var st = statusOf(d.expiry);
+    var expEl = document.getElementById('dExpiry');
+    var tagEl = expEl.nextElementSibling;
+    if(st === 'expired'){
+      expEl.className = 'v expired';
+      tagEl.textContent = '失效';
+      tagEl.className = 'v expired';
+      tagEl.style.cssText = 'width:auto;flex:0 0 auto;margin-left:8px;font-size:12px;background:#ffeaea;padding:2px 6px;border-radius:3px;';
+    } else if(st === 'soon'){
+      expEl.className = 'v';
+      expEl.style.color = '#ff8a00';
+      tagEl.textContent = '即将失效';
+      tagEl.className = 'v';
+      tagEl.style.cssText = 'width:auto;flex:0 0 auto;margin-left:8px;font-size:12px;color:#ff8a00;background:#fff1de;padding:2px 6px;border-radius:3px;';
+    } else {
+      expEl.className = 'v';
+      expEl.style.color = '';
+      tagEl.textContent = '正常';
+      tagEl.className = 'v';
+      tagEl.style.cssText = 'width:auto;flex:0 0 auto;margin-left:8px;font-size:12px;color:#2a9d7e;background:#e3f5ed;padding:2px 6px;border-radius:3px;';
+    }
+
+    renderQr();
+  }
+
+  var toastTimer;
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  fillData();
+</script>
+</body>
+</html>

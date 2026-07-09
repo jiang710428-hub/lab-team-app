@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>出库清单 - 选择批次</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    background: #e9eef5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2329;
+    display: flex; justify-content: center; min-height: 100vh;
+  }
+  body { padding: 24px 0; }
+  .phone {
+    width: 390px; min-height: 844px;
+    background: #f1f4fa;
+    border-radius: 44px;
+    box-shadow: 0 20px 50px rgba(20, 40, 80, 0.18);
+    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .statusbar { height: 44px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #1f2329; }
+  .status-right { display: flex; align-items: center; gap: 6px; }
+  .status-right svg { display: block; }
+  .nav { height: 44px; padding: 0 8px; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; position: relative; }
+  .nav .back { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #1f2329; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .nav .back:active { opacity: .5; }
+  .nav .title { text-align: center; font-size: 17px; font-weight: 600; color: #1f2329; }
+
+  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 14px 90px; }
+
+  /* 批次信息卡 */
+  .info-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 6px rgba(20,40,80,.04);
+  }
+  .info-card .ic-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .info-card .ic-bid { font-size: 14px; font-weight: 600; color: #1f2329; }
+  .info-card .ic-meta { font-size: 12px; color: #8a8f99; }
+  .info-card .ic-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px 12px;
+    font-size: 12px; color: #4a4f57;
+  }
+  .info-card .ic-grid .k { color: #8a8f99; }
+  .info-card .ic-grid .v { color: #1f2329; font-weight: 500; }
+
+  /* 子编号搜索 + 筛选 */
+  .search-row { display: flex; align-items: center; padding: 6px 0 10px; gap: 8px; }
+  .search-box {
+    flex: 1;
+    background: #fff;
+    border: 1.5px solid #2f7bff;
+    border-radius: 8px;
+    height: 34px;
+    display: flex; align-items: center; padding: 0 10px; gap: 6px;
+  }
+  .search-box svg { color: #8a8f99; }
+  .search-box input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; color: #1f2329; }
+  .search-box input::placeholder { color: #b8bcc4; }
+
+  /* 筛选下拉 */
+  .filter-btn {
+    height: 34px;
+    padding: 0 12px;
+    background: #fff;
+    border: 1px solid #e6e8ee;
+    border-radius: 8px;
+    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; color: #1f2329;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .filter-btn:active { background: #f4f6fa; }
+  .filter-btn svg { color: #8a8f99; }
+  .filter-btn .fb-label { font-weight: 500; }
+
+  /* 表格 */
+  .table-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(20,40,80,.04);
+    overflow: hidden;
+  }
+  .batch-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .batch-table th {
+    background: #fafbfd;
+    color: #8a8f99;
+    font-weight: 500;
+    padding: 10px 6px;
+    text-align: left;
+    border-bottom: 1px solid #f0f2f5;
+    white-space: nowrap;
+    position: sticky; top: 0;
+  }
+  .batch-table td {
+    padding: 10px 6px;
+    border-bottom: 1px solid #f5f6f8;
+    color: #1f2329;
+    vertical-align: middle;
+  }
+  .batch-table tr:last-child td { border-bottom: 0; }
+  .batch-table .col-check { width: 36px; text-align: center; }
+  .batch-table .col-idx { width: 28px; color: #8a8f99; }
+  .batch-table .col-exp { color: #4a4f57; }
+  .exp-tag {
+    display: inline-block; padding: 1px 5px;
+    border-radius: 3px; font-size: 10px;
+    margin-left: 4px; vertical-align: middle;
+    line-height: 1.4;
+  }
+  .exp-tag.bad { background: #ff3b30; color: #fff; }
+  .exp-tag.warn { background: #ff8a00; color: #fff; }
+
+  /* 自定义复选框 */
+  .chk {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 1.5px solid #c8ccd4;
+    border-radius: 4px;
+    background: #fff;
+    position: relative;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chk.on { background: #2f7bff; border-color: #2f7bff; }
+  .chk.on::after {
+    content: '';
+    position: absolute;
+    left: 5px; top: 1.5px;
+    width: 5px; height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* 空状态 */
+  .empty {
+    text-align: center;
+    color: #c8ccd4;
+    font-size: 13px;
+    padding: 24px 0;
+  }
+
+  /* 底部 */
+  .bottom-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 70px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px 16px;
+    box-shadow: 0 -2px 10px rgba(20,40,80,.04);
+    z-index: 20;
+  }
+  .total-info { font-size: 14px; color: #1f2329; }
+  .total-info .v { color: #1f2329; font-weight: 700; margin-left: 4px; }
+  .confirm-btn {
+    height: 42px; padding: 0 28px;
+    background: #2f7bff;
+    color: #fff;
+    border-radius: 21px;
+    font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 4px 12px rgba(47,123,255,.32);
+  }
+  .confirm-btn:active { background: #1f6ae8; }
+
+  /* Toast */
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+
+  /* ActionSheet */
+  .sheet-mask { position: absolute; inset: 0; background: rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 50; }
+  .sheet-mask.show { opacity: 1; pointer-events: auto; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #f4f6fa; border-radius: 16px 16px 0 0; padding: 6px 10px 24px; z-index: 51; transform: translateY(100%); transition: transform .25s; }
+  .sheet.show { transform: translateY(0); }
+  .sheet-handle { width: 36px; height: 4px; background: #d6dae0; border-radius: 2px; margin: 6px auto 10px; }
+  .sheet-title { font-size: 14px; color: #8a8f99; text-align: center; padding: 4px 0 10px; }
+  .sheet-list { background: #fff; border-radius: 12px; overflow: hidden; }
+  .sheet-item { padding: 14px; font-size: 15px; color: #1f2329; text-align: center; cursor: pointer; border-bottom: 1px solid #f0f2f5; -webkit-tap-highlight-color: transparent; }
+  .sheet-item:last-child { border-bottom: 0; }
+  .sheet-item:active { background: #f4f6fa; }
+  .sheet-item.active { color: #2f7bff; font-weight: 600; }
+  .sheet-cancel { background: #fff; border-radius: 12px; padding: 14px; text-align: center; font-size: 15px; color: #1f2329; margin-top: 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .sheet-cancel:active { background: #f4f6fa; }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; z-index: 30; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar">
+    <span>11:42</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0"  y="7" width="3" height="4" rx="0.5" fill="#1f2329"/><rect x="4.5" y="5" width="3" height="6" rx="0.5" fill="#1f2329"/><rect x="9" y="2.5" width="3" height="8.5" rx="0.5" fill="#1f2329"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#1f2329"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11"><path d="M8 10.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#1f2329"/><path d="M3.5 6.2a6.4 6.4 0 019 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M1 3.5a9.5 9.5 0 0114 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="#1f2329" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="#1f2329"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#1f2329" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="back" onclick="goBack()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title" id="navTitle">批次清单</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <div class="content">
+    <div class="info-card">
+      <div class="ic-head">
+        <span class="ic-bid" id="icBid">批次：p0003</span>
+      </div>
+      <div class="ic-grid">
+        <div><span class="k">总数：</span><span class="v" id="icTotal">6</span></div>
+        <div><span class="k">已选：</span><span class="v" id="icSel">0</span></div>
+        <div><span class="k">单价：</span><span class="v" id="icPrice">20</span></div>
+      </div>
+    </div>
+
+    <div class="search-row">
+      <div class="search-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="searchInput" type="text" placeholder="子编号搜索" oninput="render()" />
+      </div>
+      <div class="filter-btn" id="filterBtn" onclick="openFilter()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
+        <span class="fb-label" id="filterLabel">全部</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <table class="batch-table">
+        <thead>
+          <tr>
+            <th class="col-check"><span class="chk" id="chkAll" onclick="toggleAll()"></span></th>
+            <th class="col-idx">序号</th>
+            <th>子编号</th>
+            <th>有效期至</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty" style="display:none;">无匹配子物料</div>
+    </div>
+  </div>
+
+  <!-- 底部 -->
+  <div class="bottom-bar">
+    <div class="total-info">本批小计：<span class="v" id="vTotal">0.00 元</span></div>
+    <div class="confirm-btn" onclick="confirmPick()">完成</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- 筛选 ActionSheet -->
+  <div class="sheet-mask" id="filterMask" onclick="closeFilter()"></div>
+  <div class="sheet" id="filterSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">选择筛选条件</div>
+    <div class="sheet-list">
+      <div class="sheet-item" data-val="all" onclick="pickFilter('all')">全部</div>
+      <div class="sheet-item" data-val="warn" onclick="pickFilter('warn')">15天内失效</div>
+      <div class="sheet-item" data-val="bad" onclick="pickFilter('bad')">已失效</div>
+    </div>
+    <div class="sheet-cancel" onclick="closeFilter()">取消</div>
+  </div>
+
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  // 解析参数
+  function getParam(name){
+    var s = location.search;
+    var m = s.match(new RegExp('[?&]'+name+'=([^&]+)'));
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  var bid = getParam('bid') || 'p0003';
+  var source = getParam('source') || 'entry';  // 'entry' 或 'material'
+  var cardIdx = parseInt(getParam('idx') || '0', 10);
+
+  var STORAGE_KEY = source === 'material' ? 'outbound_material_state' : 'outbound_entry_state';
+
+  var BATCH_DATA = {
+    'p0003': { price: 20, items: [
+      { no: 'a3321-001', exp: '2026-12-20', status: 'normal' },
+      { no: 'a3321-002', exp: '2026-12-25', status: 'normal' },
+      { no: 'a3321-003', exp: '2026-08-05', status: 'warn' },
+      { no: 'a3321-004', exp: '2026-07-20', status: 'warn' },
+      { no: 'a3321-005', exp: '2026-07-10', status: 'bad' },
+      { no: 'a3321-006', exp: '2026-09-15', status: 'normal' }
+    ]},
+    'pc0002': { price: 100, items: [
+      { no: 'a3321-007', exp: '2026-11-30', status: 'normal' },
+      { no: 'a3321-008', exp: '2026-07-25', status: 'warn' },
+      { no: 'a3321-009', exp: '2027-01-12', status: 'normal' }
+    ]}
+  };
+
+  var data = BATCH_DATA[bid] || BATCH_DATA['p0003'];
+  var checkedSet = new Set();
+  var currentFilter = 'all';  // 'all' | 'warn' | 'bad'
+
+  function loadFromStorage(){
+    try {
+      var s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      var arr;
+      if(source === 'material'){
+        var card = s.cards && s.cards[cardIdx] ? s.cards[cardIdx] : null;
+        arr = (card && card.selections && card.selections[bid] && card.selections[bid].checked) || [];
+      } else {
+        arr = (s.selections && s.selections[bid] && s.selections[bid].checked) || [];
+      }
+      checkedSet = new Set(arr);
+    } catch(e) { checkedSet = new Set(); }
+  }
+  function saveToStorage(){
+    try {
+      var s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      if(source === 'material'){
+        s.cards = s.cards || [];
+        if(!s.cards[cardIdx]) s.cards[cardIdx] = { selections: {}, currentBatches: ['p0003','pc0002'] };
+        s.cards[cardIdx].selections = s.cards[cardIdx].selections || {};
+        s.cards[cardIdx].selections[bid] = { checked: Array.from(checkedSet) };
+      } else {
+        s.selections = s.selections || {};
+        s.selections[bid] = { checked: Array.from(checkedSet) };
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    } catch(e) {}
+  }
+
+  function render(){
+    var kw = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+    var items = data.items.filter(function(it){
+      if(kw && it.no.toLowerCase().indexOf(kw) === -1) return false;
+      if(currentFilter === 'warn' && it.status !== 'warn') return false;
+      if(currentFilter === 'bad' && it.status !== 'bad') return false;
+      return true;
+    });
+    var tbody = document.getElementById('tbody');
+    var empty = document.getElementById('empty');
+    if(!items.length){
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      tbody.innerHTML = items.map(function(it, idx){
+        var tag = '';
+        if(it.status === 'bad') tag = '<span class="exp-tag bad">失效</span>';
+        var checked = checkedSet.has(it.no) ? 'on' : '';
+        return '<tr>'
+          + '<td class="col-check"><span class="chk '+checked+'" data-no="'+it.no+'" onclick="toggleOne(this)"></span></td>'
+          + '<td class="col-idx">'+(idx+1)+'</td>'
+          + '<td>'+it.no+'</td>'
+          + '<td class="col-exp">'+it.exp+tag+'</td>'
+          + '</tr>';
+      }).join('');
+    }
+    updateSummary();
+  }
+
+  function openFilter(){
+    var mask = document.getElementById('filterMask');
+    var sheet = document.getElementById('filterSheet');
+    // 标记当前选中
+    sheet.querySelectorAll('.sheet-item').forEach(function(el){
+      if(el.getAttribute('data-val') === currentFilter) el.classList.add('active');
+      else el.classList.remove('active');
+    });
+    mask.classList.add('show');
+    sheet.classList.add('show');
+  }
+  function closeFilter(){
+    document.getElementById('filterMask').classList.remove('show');
+    document.getElementById('filterSheet').classList.remove('show');
+  }
+  function pickFilter(val){
+    currentFilter = val;
+    var labels = { all: '全部', warn: '15天内失效', bad: '已失效' };
+    document.getElementById('filterLabel').textContent = labels[val] || '全部';
+    closeFilter();
+    render();
+  }
+
+  function toggleOne(el){
+    var no = el.getAttribute('data-no');
+    if(checkedSet.has(no)){ checkedSet.delete(no); el.classList.remove('on'); }
+    else { checkedSet.add(no); el.classList.add('on'); }
+    updateSummary();
+  }
+  function getVisibleItems(){
+    var kw = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+    return data.items.filter(function(it){
+      if(kw && it.no.toLowerCase().indexOf(kw) === -1) return false;
+      if(currentFilter === 'warn' && it.status !== 'warn') return false;
+      if(currentFilter === 'bad' && it.status !== 'bad') return false;
+      return true;
+    });
+  }
+  function toggleAll(){
+    var visible = getVisibleItems();
+    var allChecked = visible.length && visible.every(function(it){ return checkedSet.has(it.no); });
+    visible.forEach(function(it){
+      if(allChecked) checkedSet.delete(it.no);
+      else checkedSet.add(it.no);
+    });
+    render();
+  }
+
+  function updateSummary(){
+    var cnt = checkedSet.size;
+    var total = cnt * data.price;
+    document.getElementById('icSel').textContent = cnt;
+    document.getElementById('vTotal').textContent = total.toFixed(2) + ' 元';
+    // 全选状态（基于当前可见项）
+    var visible = getVisibleItems();
+    var chkAll = document.getElementById('chkAll');
+    if(visible.length && visible.every(function(it){ return checkedSet.has(it.no); })){
+      chkAll.classList.add('on');
+    } else {
+      chkAll.classList.remove('on');
+    }
+  }
+
+  function confirmPick(){
+    saveToStorage();
+    var cnt = checkedSet.size;
+    toast('已保存（'+cnt+' 件）');
+    setTimeout(function(){ history.back(); }, 300);
+  }
+
+  function goBack(){
+    // 返回时也保存
+    saveToStorage();
+    history.back();
+  }
+
+  var toastTimer;
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1500);
+  }
+
+  // 初始化
+  document.getElementById('navTitle').textContent = '批次：' + bid;
+  document.getElementById('icBid').textContent = '批次：' + bid;
+  document.getElementById('icTotal').textContent = data.items.length;
+  document.getElementById('icPrice').textContent = data.price;
+  loadFromStorage();
+  render();
+</script>
+</body>
+</html>

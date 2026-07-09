@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>扫一扫</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  html, body {
+    background: #e9eef5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif;
+    color: #1f2329;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  body { padding: 24px 0; }
+
+  /* 手机外框 */
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: #ffffff;
+    border-radius: 44px;
+    box-shadow: 0 20px 50px rgba(20, 40, 80, 0.18);
+    overflow: hidden;
+    position: relative;
+    padding-bottom: 30px;
+  }
+
+  /* 状态栏 */
+  .status-bar {
+    height: 44px;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2329;
+  }
+  .status-right { display: flex; align-items: center; gap: 6px; }
+  .status-right svg { display: block; }
+
+  /* 导航栏 */
+  .nav {
+    height: 44px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .nav-back {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+    color: #1f2329;
+  }
+  .nav-back:active { opacity: .6; }
+  .nav-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1f2329;
+  }
+
+  /* 内容 */
+  .content {
+    padding: 80px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* 扫码框 */
+  .scan-frame {
+    position: relative;
+    width: 220px;
+    height: 220px;
+  }
+  .scan-frame svg.qr { width: 100%; height: 100%; display: block; }
+  /* 四角青色装饰 */
+  .scan-frame .corner {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border: 3px solid #2fd4d4;
+  }
+  .scan-frame .corner.tl { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 2px; }
+  .scan-frame .corner.tr { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 2px; }
+  .scan-frame .corner.bl { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 2px; }
+  .scan-frame .corner.br { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 2px; }
+
+  /* 提示文案 */
+  .tip {
+    margin-top: 28px;
+    padding: 0 32px;
+    text-align: center;
+    font-size: 14px;
+    color: #8a8f99;
+    line-height: 1.7;
+  }
+
+  /* Home Indicator */
+  .home-indicator {
+    position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px; border-radius: 3px; background: #1f2329;
+  }
+
+  /* Toast */
+  .toast {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    background: rgba(0,0,0,.78); color: #fff; padding: 10px 18px;
+    border-radius: 8px; font-size: 13px; z-index: 99;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <span>12:00</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0"  y="7" width="3" height="4" rx="0.5" fill="#1f2329"/><rect x="4.5" y="5" width="3" height="6" rx="0.5" fill="#1f2329"/><rect x="9" y="2.5" width="3" height="8.5" rx="0.5" fill="#1f2329"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#1f2329"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11"><path d="M8 10.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#1f2329"/><path d="M3.5 6.2a6.4 6.4 0 019 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M1 3.5a9.5 9.5 0 0114 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="#1f2329" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="#1f2329"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#1f2329" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <!-- 导航 -->
+  <div class="nav">
+    <div class="nav-back" onclick="history.back()" aria-label="返回">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="nav-title">扫一扫</div>
+  </div>
+
+  <!-- 内容 -->
+  <div class="content">
+    <div class="scan-frame">
+      <span class="corner tl"></span>
+      <span class="corner tr"></span>
+      <span class="corner bl"></span>
+      <span class="corner br"></span>
+      <svg class="qr" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" fill="#ffffff"/>
+        <!-- 三个定位角 -->
+        <rect x="6"  y="6"  width="22" height="22" fill="#1f2329"/>
+        <rect x="10" y="10" width="14" height="14" fill="#ffffff"/>
+        <rect x="13" y="13" width="8"  height="8"  fill="#1f2329"/>
+        <rect x="72" y="6"  width="22" height="22" fill="#1f2329"/>
+        <rect x="76" y="10" width="14" height="14" fill="#ffffff"/>
+        <rect x="79" y="13" width="8"  height="8"  fill="#1f2329"/>
+        <rect x="6"  y="72" width="22" height="22" fill="#1f2329"/>
+        <rect x="10" y="76" width="14" height="14" fill="#ffffff"/>
+        <rect x="13" y="79" width="8"  height="8"  fill="#1f2329"/>
+        <!-- 数据小方块（随机分布） -->
+        <g fill="#1f2329">
+          <rect x="34" y="6"  width="4" height="4"/><rect x="40" y="6"  width="4" height="4"/><rect x="50" y="6"  width="4" height="4"/><rect x="58" y="6"  width="4" height="4"/><rect x="64" y="6"  width="4" height="4"/>
+          <rect x="34" y="12" width="4" height="4"/><rect x="44" y="12" width="4" height="4"/><rect x="56" y="12" width="4" height="4"/>
+          <rect x="36" y="18" width="4" height="4"/><rect x="46" y="18" width="4" height="4"/><rect x="52" y="18" width="4" height="4"/><rect x="62" y="18" width="4" height="4"/>
+          <rect x="6"  y="34" width="4" height="4"/><rect x="14" y="34" width="4" height="4"/><rect x="22" y="34" width="4" height="4"/><rect x="32" y="34" width="4" height="4"/><rect x="42" y="34" width="4" height="4"/><rect x="48" y="34" width="4" height="4"/><rect x="56" y="34" width="4" height="4"/><rect x="64" y="34" width="4" height="4"/><rect x="72" y="34" width="4" height="4"/><rect x="82" y="34" width="4" height="4"/><rect x="90" y="34" width="4" height="4"/>
+          <rect x="10" y="40" width="4" height="4"/><rect x="20" y="40" width="4" height="4"/><rect x="30" y="40" width="4" height="4"/><rect x="38" y="40" width="4" height="4"/><rect x="50" y="40" width="4" height="4"/><rect x="60" y="40" width="4" height="4"/><rect x="68" y="40" width="4" height="4"/><rect x="78" y="40" width="4" height="4"/><rect x="86" y="40" width="4" height="4"/>
+          <rect x="6"  y="46" width="4" height="4"/><rect x="16" y="46" width="4" height="4"/><rect x="26" y="46" width="4" height="4"/><rect x="40" y="46" width="4" height="4"/><rect x="46" y="46" width="4" height="4"/><rect x="58" y="46" width="4" height="4"/><rect x="66" y="46" width="4" height="4"/><rect x="76" y="46" width="4" height="4"/><rect x="84" y="46" width="4" height="4"/>
+          <rect x="12" y="52" width="4" height="4"/><rect x="22" y="52" width="4" height="4"/><rect x="34" y="52" width="4" height="4"/><rect x="44" y="52" width="4" height="4"/><rect x="52" y="52" width="4" height="4"/><rect x="62" y="52" width="4" height="4"/><rect x="70" y="52" width="4" height="4"/><rect x="80" y="52" width="4" height="4"/><rect x="88" y="52" width="4" height="4"/>
+          <rect x="6"  y="58" width="4" height="4"/><rect x="18" y="58" width="4" height="4"/><rect x="28" y="58" width="4" height="4"/><rect x="38" y="58" width="4" height="4"/><rect x="48" y="58" width="4" height="4"/><rect x="60" y="58" width="4" height="4"/><rect x="74" y="58" width="4" height="4"/><rect x="86" y="58" width="4" height="4"/>
+          <rect x="10" y="64" width="4" height="4"/><rect x="24" y="64" width="4" height="4"/><rect x="36" y="64" width="4" height="4"/><rect x="46" y="64" width="4" height="4"/><rect x="56" y="64" width="4" height="4"/><rect x="66" y="64" width="4" height="4"/><rect x="78" y="64" width="4" height="4"/><rect x="88" y="64" width="4" height="4"/>
+          <rect x="34" y="72" width="4" height="4"/><rect x="44" y="72" width="4" height="4"/><rect x="54" y="72" width="4" height="4"/><rect x="64" y="72" width="4" height="4"/><rect x="74" y="72" width="4" height="4"/><rect x="84" y="72" width="4" height="4"/>
+          <rect x="36" y="78" width="4" height="4"/><rect x="48" y="78" width="4" height="4"/><rect x="58" y="78" width="4" height="4"/><rect x="70" y="78" width="4" height="4"/><rect x="82" y="78" width="4" height="4"/><rect x="90" y="78" width="4" height="4"/>
+          <rect x="34" y="84" width="4" height="4"/><rect x="42" y="84" width="4" height="4"/><rect x="52" y="84" width="4" height="4"/><rect x="60" y="84" width="4" height="4"/><rect x="68" y="84" width="4" height="4"/><rect x="80" y="84" width="4" height="4"/><rect x="88" y="84" width="4" height="4"/>
+          <rect x="38" y="90" width="4" height="4"/><rect x="46" y="90" width="4" height="4"/><rect x="56" y="90" width="4" height="4"/><rect x="64" y="90" width="4" height="4"/><rect x="74" y="90" width="4" height="4"/><rect x="86" y="90" width="4" height="4"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="tip">扫描设备、主/子物料、样品、实验记录等二维码<br>查看信息</div>
+  </div>
+
+  <div class="home-indicator"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var _t;
+  function toast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(_t);
+    _t = setTimeout(function(){ el.classList.remove('show'); }, 1800);
+  }
+</script>
+</body>
+</html>

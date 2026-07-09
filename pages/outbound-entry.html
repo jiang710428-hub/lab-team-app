@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>出库录入</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    background: #e9eef5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2329;
+    display: flex; justify-content: center; min-height: 100vh;
+  }
+  body { padding: 24px 0; }
+  .phone {
+    width: 390px; min-height: 844px;
+    background: #f1f4fa;
+    border-radius: 44px;
+    box-shadow: 0 20px 50px rgba(20, 40, 80, 0.18);
+    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .statusbar { height: 44px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #1f2329; }
+  .status-right { display: flex; align-items: center; gap: 6px; }
+  .status-right svg { display: block; }
+  .nav { height: 44px; padding: 0 8px; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; position: relative; }
+  .nav .back { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #1f2329; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .nav .back:active { opacity: .5; }
+  .nav .title { text-align: center; font-size: 17px; font-weight: 600; color: #1f2329; }
+  .nav .filter-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #1f2329; }
+
+  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 0 110px; }
+
+  /* 扫码输入区 */
+  .scan-wrap { padding: 8px 14px 10px; }
+  .scan-box {
+    display: flex; align-items: center; gap: 6px;
+    height: 36px;
+    background: #fff;
+    border: 1.5px solid #2f7bff;
+    border-radius: 10px;
+    padding: 0 6px 0 12px;
+  }
+  .scan-box input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; color: #1f2329; }
+  .scan-box input::placeholder { color: #aab0bb; }
+  .scan-btn {
+    width: 30px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    background: #2f7bff;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #fff;
+  }
+  .scan-btn:active { background: #1f6ae8; }
+
+  /* 卡片 */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    margin: 0 14px 12px;
+    box-shadow: 0 2px 6px rgba(20,40,80,.04);
+    overflow: hidden;
+  }
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid #f0f2f5;
+  }
+  .card-head .title { font-size: 15px; font-weight: 600; color: #1f2329; }
+  .form-row {
+    display: flex; align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid #f0f2f5;
+    min-height: 44px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .form-row.no-cursor { cursor: default; }
+  .form-row.no-cursor:active { background: transparent; }
+  .form-row:last-child { border-bottom: 0; }
+  .form-row .k {
+    width: 90px; flex-shrink: 0;
+    font-size: 13px; color: #1f2329;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .form-row .k .req { color: #ff3b30; }
+  .form-row .v { flex: 1; font-size: 13px; color: #1f2329; }
+  .form-row .v.placeholder { color: #c8ccd4; }
+  .form-row .v input {
+    width: 100%; border: 0; outline: 0; background: transparent;
+    font-size: 13px; color: #1f2329;
+    text-align: right;
+  }
+  .form-row .v input::placeholder { color: #c8ccd4; }
+  .form-row .arrow { color: #c8ccd4; margin-left: 6px; flex-shrink: 0; }
+
+  /* 出库清单子区域（物料卡内） */
+  .pick-section { padding: 0 0 4px; }
+  .pick-section .ps-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px 6px;
+  }
+  .pick-section .ps-title { font-size: 13px; color: #1f2329; font-weight: 500; }
+  .pick-section .ps-count { font-size: 12px; color: #8a8f99; }
+  .pick-item {
+    padding: 10px 14px;
+    border-top: 1px solid #f0f2f5;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pick-item:active { background: #f7f9fc; }
+  .pick-item .pi-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .pick-item .pi-head .bid { font-size: 14px; color: #1f2329; font-weight: 600; }
+  .pick-item .pi-head .pr { display: flex; align-items: center; gap: 4px; color: #8a8f99; font-size: 12px; }
+  .pick-item .pi-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px 10px;
+    font-size: 12px;
+  }
+  .pick-item .pi-grid .k { color: #8a8f99; }
+  .pick-item .pi-grid .v { color: #1f2329; font-weight: 500; }
+
+  /* 图片上传 */
+  .img-row { padding: 12px 14px; }
+  .img-row .k { font-size: 13px; color: #1f2329; margin-bottom: 8px; }
+  .img-row .k .opt { color: #8a8f99; font-weight: 400; }
+  .img-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .img-add {
+    aspect-ratio: 1/1;
+    background: #f3f5f9;
+    border-radius: 6px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #c8ccd4;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .img-add:active { background: #e9eef5; }
+  .img-add svg { margin-bottom: 4px; }
+  .img-add .count { font-size: 11px; }
+
+  /* 周期性使用完 */
+  .radio-row { padding: 12px 14px; }
+  .radio-row .top { display: flex; align-items: center; justify-content: space-between; }
+  .radio-row .top .k { font-size: 13px; color: #1f2329; }
+  .radio-row .radios { display: flex; gap: 16px; }
+  .radio-row .radios .r { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #4a4f57; }
+  .radio-row .radios .r.on { color: #2f7bff; font-weight: 500; }
+  .radio-row .radios .r-dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid #c8ccd4;
+    background: #fff;
+    position: relative;
+  }
+  .radio-row .radios .r.on .r-dot { border-color: #2f7bff; }
+  .radio-row .radios .r.on .r-dot::after {
+    content: '';
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #2f7bff;
+  }
+  .radio-row .hint { font-size: 11px; color: #8a8f99; margin-top: 6px; }
+
+  /* 备注 */
+  .remark-row { display: flex; align-items: center; padding: 12px 14px; min-height: 44px; }
+  .remark-row .k { width: 60px; font-size: 13px; color: #1f2329; flex-shrink: 0; }
+  .remark-row input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; color: #1f2329; }
+  .remark-row input::placeholder { color: #c8ccd4; }
+
+  /* 底部 */
+  .bottom-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 70px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px 16px;
+    box-shadow: 0 -2px 10px rgba(20,40,80,.04);
+    z-index: 20;
+  }
+  .total-info { font-size: 14px; color: #1f2329; }
+  .total-info .v { color: #1f2329; font-weight: 700; margin-left: 4px; }
+  .confirm-btn {
+    height: 42px; padding: 0 28px;
+    background: #2f7bff;
+    color: #fff;
+    border-radius: 21px;
+    font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 4px 12px rgba(47,123,255,.32);
+  }
+  .confirm-btn:active { background: #1f6ae8; }
+
+  /* 弹窗 */
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .sheet { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 8px 0 20px; animation: slideUp .25s ease; max-height: 88%; overflow-y: auto; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 12px; }
+  .sheet-title { text-align: center; font-size: 15px; font-weight: 600; color: #1f2329; margin-bottom: 8px; }
+  .sheet-item { height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 22px; font-size: 15px; color: #1f2329; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .sheet-item:active { background: #f3f5f9; }
+  .sheet-cancel { margin-top: 6px; border-top: 8px solid #f1f4fa; height: 50px; display: flex; align-items: center; justify-content: center; color: #8a8f99; font-size: 15px; cursor: pointer; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; z-index: 30; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar">
+    <span>11:40</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0"  y="7" width="3" height="4" rx="0.5" fill="#1f2329"/><rect x="4.5" y="5" width="3" height="6" rx="0.5" fill="#1f2329"/><rect x="9" y="2.5" width="3" height="8.5" rx="0.5" fill="#1f2329"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#1f2329"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11"><path d="M8 10.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#1f2329"/><path d="M3.5 6.2a6.4 6.4 0 019 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M1 3.5a9.5 9.5 0 0114 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="#1f2329" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="#1f2329"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#1f2329" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="back" onclick="goBack()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">出库录入</div>
+    <div class="filter-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="18" r="1" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- 扫码输入区 -->
+    <div class="scan-wrap">
+      <div class="scan-box">
+        <input id="scanInput" type="text" placeholder="扫描物料自动查询物料，并把物料合并后选择下方批" />
+        <div class="scan-btn" onclick="doScan()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- 物料主卡（含表单/出库清单/领用人/图片/周期性使用完/备注） -->
+    <div class="card">
+      <div class="card-head">
+        <span class="title">物料</span>
+        <span class="del" onclick="delMaterial()" style="color:#ff3b30;cursor:pointer;display:flex;align-items:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        </span>
+      </div>
+
+      <div class="form-row no-cursor">
+        <span class="k">选择物料<span class="req">*</span></span>
+        <span class="v" id="vMaterial">试剂</span>
+      </div>
+      <div class="form-row" onclick="pickWh()">
+        <span class="k">选择仓库<span class="req">*</span></span>
+        <span class="v placeholder" id="vWh">请选择要出库的仓库</span>
+        <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="form-row no-cursor">
+        <span class="k">选择批次<span class="req">*</span></span>
+        <span class="v" id="vBatch">共选择了 2 个批次</span>
+        <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+
+      <!-- 出库清单子区域 -->
+      <div class="pick-section">
+        <div class="ps-head">
+          <span class="ps-title">出库清单</span>
+          <span class="ps-count" id="psCount">已选 0 件</span>
+        </div>
+        <div id="pickList"></div>
+      </div>
+
+      <!-- 领用人 -->
+      <div class="form-row no-cursor">
+        <span class="k">领用人<span class="req">*</span></span>
+        <span class="v placeholder" id="vMember">选择团队成员</span>
+        <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+
+      <!-- 图片 -->
+      <div class="img-row">
+        <div class="k">图片 <span class="opt">（选填）</span></div>
+        <div class="img-grid">
+          <div class="img-add" onclick="addImg()">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span class="count">(0/9)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 周期性使用完 -->
+      <div class="radio-row">
+        <div class="top">
+          <span class="k">周期性使用完</span>
+          <div class="radios">
+            <div class="r" id="rYes" onclick="setPeriodic('yes')"><span class="r-dot"></span>是</div>
+            <div class="r on" id="rNo" onclick="setPeriodic('no')"><span class="r-dot"></span>否</div>
+          </div>
+        </div>
+        <div class="hint">如：物料A库存5瓶，已使用完1瓶</div>
+      </div>
+    </div>
+
+    <!-- 备注（独立卡片） -->
+    <div class="card">
+      <div class="remark-row">
+        <span class="k">备注</span>
+        <input id="iRemark" type="text" placeholder="请输入备注" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部合计 -->
+  <div class="bottom-bar">
+    <div class="total-info">本次出库合计：<span class="v" id="vTotal">0.00 元</span></div>
+    <div class="confirm-btn" onclick="confirmOutbound()">确认出库</div>
+  </div>
+
+  <!-- 选择仓库弹窗 -->
+  <div class="mask" id="sheetWh" onclick="if(event.target===this)closeSheet('sheetWh')">
+    <div class="sheet">
+      <div class="sheet-bar"></div>
+      <div class="sheet-title">选择要出库的仓库</div>
+      <div class="sheet-item" onclick="chooseWh('乃东路一号库')">乃东路一号库</div>
+      <div class="sheet-item" onclick="chooseWh('泽当中心库')">泽当中心库</div>
+      <div class="sheet-item" onclick="chooseWh('样品暂存库')">样品暂存库</div>
+      <div class="sheet-cancel" onclick="closeSheet('sheetWh')">取消</div>
+    </div>
+  </div>
+
+  <!-- 选择批次弹窗 -->
+  <div class="mask" id="sheetBatch" onclick="if(event.target===this)closeSheet('sheetBatch')">
+    <div class="sheet">
+      <div class="sheet-bar"></div>
+      <div class="sheet-title">选择批次</div>
+      <div class="sheet-item" onclick="chooseBatch('all')">共选2个批次</div>
+      <div class="sheet-item" onclick="chooseBatch('p0003')">仅p0003</div>
+      <div class="sheet-item" onclick="chooseBatch('pc0002')">仅pc0002</div>
+      <div class="sheet-cancel" onclick="closeSheet('sheetBatch')">取消</div>
+    </div>
+  </div>
+
+  <!-- 领用人弹窗 -->
+  <div class="mask" id="sheetMember" onclick="if(event.target===this)closeSheet('sheetMember')">
+    <div class="sheet">
+      <div class="sheet-bar"></div>
+      <div class="sheet-title">选择领用人</div>
+      <div class="sheet-item" onclick="chooseMember('扎西顿珠')">扎西顿珠</div>
+      <div class="sheet-item" onclick="chooseMember('次仁旺姆')">次仁旺姆</div>
+      <div class="sheet-item" onclick="chooseMember('多吉')">多吉</div>
+      <div class="sheet-item" onclick="chooseMember('哈哈')">哈哈</div>
+      <div class="sheet-cancel" onclick="closeSheet('sheetMember')">取消</div>
+    </div>
+  </div>
+
+  <!-- 删除确认弹窗 -->
+  <div class="mask" id="modalDel" onclick="if(event.target===this)closeModal('modalDel')" style="align-items:center;justify-content:center;">
+    <div style="width:78%;background:#fff;border-radius:14px;padding:18px 16px 14px;animation:pop .2s ease;" onclick="event.stopPropagation()">
+      <h4 style="font-size:16px;margin-bottom:8px;text-align:center;">确定删除该物料行？</h4>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <div style="flex:1;height:40px;border-radius:8px;background:#f1f4fa;color:#4a4f57;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;" onclick="closeModal('modalDel')">取消</div>
+        <div style="flex:1;height:40px;border-radius:8px;background:#ff3b30;color:#fff;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;" onclick="doDelete()">删除</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  // localStorage key: outbound_entry_state
+  // { selections: { 'p0003': {checked:['a3321-001',...]}, 'pc0002': {...} }, currentBatches: ['p0003','pc0002'] }
+  var STORAGE_KEY = 'outbound_entry_state';
+
+  // 批次元数据（每个批次的库存和单价）
+  var BATCH_META = {
+    'p0003':  { stock: 6, price: 20 },
+    'pc0002': { stock: 3, price: 100 }
+  };
+
+  function loadState(){
+    try {
+      var s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      if(!s.selections) s.selections = {};
+      if(!s.currentBatches || !s.currentBatches.length){
+        s.currentBatches = ['p0003','pc0002'];
+      }
+      return s;
+    } catch(e) { return { selections: {}, currentBatches: ['p0003','pc0002'] }; }
+  }
+  function saveState(state){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function renderPickList(){
+    var list = document.getElementById('pickList');
+    var state = loadState();
+    var sel = state.selections;
+    var bids = state.currentBatches;
+    var html = '';
+    var totalCnt = 0;
+    var totalAmt = 0;
+    bids.forEach(function(bid){
+      var meta = BATCH_META[bid];
+      if(!meta) return;
+      var s = sel[bid] || { checked: [] };
+      var cnt = s.checked.length;
+      totalCnt += cnt;
+      totalAmt += cnt * meta.price;
+      html += '<div class="pick-item" onclick="goBatch(\''+bid+'\')">'
+        + '<div class="pi-head">'
+        +   '<span class="bid">'+bid+'</span>'
+        +   '<div class="pr">'
+        +     '<span>点击选择</span>'
+        +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="pi-grid">'
+        +   '<div><span class="k">库存：</span><span class="v">'+meta.stock+'</span></div>'
+        +   '<div><span class="k">已选：</span><span class="v">'+cnt+'</span></div>'
+        +   '<div><span class="k">单价：</span><span class="v">'+meta.price+'</span></div>'
+        + '</div>'
+        + '</div>';
+    });
+    list.innerHTML = html;
+    document.getElementById('psCount').textContent = '已选 ' + totalCnt + ' 件';
+    document.getElementById('vTotal').textContent = totalAmt.toFixed(2) + ' 元';
+    // 顶部选择批次文案
+    document.getElementById('vBatch').textContent = bids.length === 2 ? '共选择了 2 个批次' : '已选 1 个批次';
+  }
+
+  function goBatch(bid){
+    location.href = 'outbound-batch.html?bid=' + encodeURIComponent(bid);
+  }
+
+  // 扫码
+  function doScan(){
+    var v = document.getElementById('scanInput').value;
+    if(!v) { toast('请先扫码或输入物料码'); return; }
+    toast('已查询到物料：试剂');
+  }
+
+  // 选择仓库
+  function pickWh(){ openSheet('sheetWh'); }
+  function chooseWh(w){
+    closeSheet('sheetWh');
+    var el = document.getElementById('vWh');
+    el.textContent = w; el.classList.remove('placeholder');
+    toast('已选择仓库：'+w);
+  }
+
+  // 选择批次
+  function pickBatch(){ openSheet('sheetBatch'); }
+  function chooseBatch(mode){
+    closeSheet('sheetBatch');
+    var state = loadState();
+    if(mode === 'all'){
+      state.currentBatches = ['p0003','pc0002'];
+    } else if(mode === 'p0003'){
+      state.currentBatches = ['p0003'];
+    } else if(mode === 'pc0002'){
+      state.currentBatches = ['pc0002'];
+    }
+    saveState(state);
+    renderPickList();
+  }
+
+  // 领用人
+  function pickMember(){ openSheet('sheetMember'); }
+  function chooseMember(name){
+    closeSheet('sheetMember');
+    var el = document.getElementById('vMember');
+    el.textContent = name; el.classList.remove('placeholder');
+    toast('领用人：'+name);
+  }
+
+  // 删除物料
+  function delMaterial(){ openModal('modalDel'); }
+  function doDelete(){
+    closeModal('modalDel');
+    localStorage.removeItem(STORAGE_KEY);
+    renderPickList();
+    toast('已删除该物料行');
+  }
+
+  // 周期性使用完
+  function setPeriodic(v){
+    document.getElementById('rYes').classList.toggle('on', v==='yes');
+    document.getElementById('rNo').classList.toggle('on', v==='no');
+    if(v === 'yes'){
+      toast('已标记为周期性使用完');
+    }
+  }
+
+  // 图片
+  function addImg(){
+    toast('打开相机/相册（功能待开发）');
+  }
+
+  function openSheet(id){ document.getElementById(id).classList.add('show'); }
+  function closeSheet(id){ document.getElementById(id).classList.remove('show'); }
+  function openModal(id){ document.getElementById(id).classList.add('show'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+  function goBack(){
+    if(history.length > 1) history.back();
+    else location.href = 'outbound.html';
+  }
+
+  function confirmOutbound(){
+    var wh = document.getElementById('vWh');
+    var state = loadState();
+    var sel = state.selections;
+    var cnt = 0;
+    Object.keys(sel).forEach(function(bid){ cnt += (sel[bid].checked || []).length; });
+    if(wh.classList.contains('placeholder')){ toast('请先选择仓库'); return; }
+    if(!cnt){ toast('请在出库清单中勾选子物料'); return; }
+    toast('出库成功（'+cnt+' 件）');
+  }
+
+  var toastTimer;
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  // 初始化：从子页面返回时刷新
+  renderPickList();
+</script>
+</body>
+</html>

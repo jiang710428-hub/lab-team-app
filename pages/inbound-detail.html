@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>入库详情</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  html, body {
+    background: #e9eef5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif;
+    color: #1f2329;
+    display: flex; justify-content: center; min-height: 100vh;
+  }
+  body { padding: 24px 0; }
+  .phone {
+    width: 390px; min-height: 844px;
+    background: #f1f4fa;
+    border-radius: 44px;
+    box-shadow: 0 20px 50px rgba(20, 40, 80, 0.18);
+    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .status-bar { height: 44px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; flex-shrink: 0; }
+  .status-right { display: flex; align-items: center; gap: 6px; }
+  .status-right svg { display: block; }
+  .nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; height: 44px; padding: 0 8px; flex-shrink: 0; }
+  .nav .back { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #1f2329; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .nav .back:active { opacity: .5; }
+  .nav .title { text-align: center; font-size: 17px; font-weight: 600; color: #1f2329; }
+
+  .content { padding: 0 14px 30px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
+
+  /* 二维码卡片 */
+  .qr-card { background: #fff; border-radius: 12px; padding: 18px 16px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 2px 6px rgba(20,40,80,.04); margin-bottom: 12px; }
+  .qr-img { width: 110px; height: 110px; margin-bottom: 14px; }
+  .save-btn { background: #2f7bff; color: #fff; height: 36px; padding: 0 28px; border-radius: 18px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s; }
+  .save-btn:active { background: #1f6ae8; }
+
+  /* 分组 */
+  .group { background: #fff; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(20,40,80,.04); overflow: hidden; }
+  .group-title { background: #eef2f7; padding: 10px 14px; font-size: 13px; font-weight: 600; color: #1f2329; }
+  .row { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; min-height: 44px; }
+  .row:last-child { border-bottom: 0; }
+  .row .k { color: #8a8f99; width: 80px; flex-shrink: 0; }
+  .row .v { color: #1f2329; font-weight: 500; flex: 1; text-align: right; word-break: break-all; }
+  .row .v.placeholder { color: #c8ccd4; font-weight: 400; }
+
+  /* 库存信息行 */
+  .info-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+  .info-row .k { color: #8a8f99; }
+  .info-row .v { color: #1f2329; font-weight: 500; }
+  .wh-chip { background: #e8f1ff; color: #2f7bff; font-size: 12px; padding: 4px 10px; border-radius: 4px; font-weight: 500; }
+
+  /* 表格 - 支持左右滑动 */
+  .table-wrap { position: relative; overflow: hidden; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .table-scroll::-webkit-scrollbar { height: 4px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: #d6dbe3; border-radius: 2px; }
+  .table-scroll::-webkit-scrollbar-track { background: transparent; }
+  table { border-collapse: collapse; min-width: 100%; }
+  thead th { background: #f7f9fc; color: #8a8f99; font-size: 12px; font-weight: 500; padding: 10px 12px; text-align: left; white-space: nowrap; border-bottom: 1px solid #f0f2f5; }
+  tbody td { padding: 12px; font-size: 12px; color: #1f2329; border-bottom: 1px solid #f0f2f5; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:active { background: #f7f9fc; }
+  .op-btns { display: flex; gap: 4px; }
+  .op-btn { padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; -webkit-tap-highlight-color: transparent; border: 1px solid; }
+  .op-btn.outline-blue { color: #2f7bff; border-color: #2f7bff; background: #fff; }
+  .op-btn.outline-blue:active { background: #e8f1ff; }
+  .op-btn.outline-green { color: #2a9d7e; border-color: #2a9d7e; background: #fff; }
+  .op-btn.outline-green:active { background: #e3f5ed; }
+  .qr-mini { width: 22px; height: 22px; display: inline-block; vertical-align: middle; }
+
+  /* 滑动提示 */
+  .slide-hint { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; font-size: 11px; color: #b8bcc4; background: #fafbfc; border-top: 1px solid #f0f2f5; }
+
+  /* 弹窗/Toast */
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .sheet { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 8px 0 20px; animation: slideUp .25s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 12px; }
+  .sheet-title { text-align: center; font-size: 15px; font-weight: 600; color: #1f2329; margin-bottom: 8px; }
+  .sheet-item { height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 22px; font-size: 15px; color: #1f2329; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .sheet-item:active { background: #f3f5f9; }
+  .sheet-item svg { color: #4a4f57; }
+  .sheet-cancel { margin-top: 6px; border-top: 8px solid #f1f4fa; height: 50px; display: flex; align-items: center; justify-content: center; color: #8a8f99; font-size: 15px; cursor: pointer; }
+  .modal-center { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: center; justify-content: center; padding: 0 24px; }
+  .modal-center.show { display: flex; }
+  .modal-box { width: 100%; background: #fff; border-radius: 14px; padding: 18px 16px 12px; animation: pop .2s ease; }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-box h4 { font-size: 16px; margin-bottom: 12px; text-align: center; }
+  .modal-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+  .modal-row:last-of-type { border-bottom: 0; }
+  .modal-row .k { color: #8a8f99; }
+  .modal-row .v { color: #1f2329; font-weight: 500; }
+  .modal-close { margin-top: 10px; height: 40px; border-radius: 8px; background: #2f7bff; color: #fff; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; z-index: 30; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar">
+    <span>10:33</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0"  y="7" width="3" height="4" rx="0.5" fill="#1f2329"/><rect x="4.5" y="5" width="3" height="6" rx="0.5" fill="#1f2329"/><rect x="9" y="2.5" width="3" height="8.5" rx="0.5" fill="#1f2329"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#1f2329"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11"><path d="M8 10.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#1f2329"/><path d="M3.5 6.2a6.4 6.4 0 019 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M1 3.5a9.5 9.5 0 0114 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="#1f2329" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="#1f2329"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#1f2329" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="back" onclick="goBack()" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f2329" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">入库详情</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <div class="content">
+    <!-- 入库信息 -->
+    <div class="group">
+      <div class="group-title">入库信息</div>
+      <div class="row"><span class="k">物料名称</span><span class="v" id="bName">试剂</span></div>
+      <div class="row"><span class="k">物料编号</span><span class="v" id="bNo">a3321</span></div>
+      <div class="row"><span class="k">类目</span><span class="v" id="bCat">化学试剂</span></div>
+      <div class="row"><span class="k">规格</span><span class="v" id="bSpec">500ml</span></div>
+      <div class="row"><span class="k">单位</span><span class="v" id="bUnit">瓶</span></div>
+      <div class="row"><span class="k">单价</span><span class="v" id="bPrice">100.00元</span></div>
+      <div class="row"><span class="k">入库时间</span><span class="v" id="bTime">2026-07-07 08:39</span></div>
+      <div class="row"><span class="k">入库数量</span><span class="v" id="bQty">10</span></div>
+      <div class="row"><span class="k">接收人</span><span class="v" id="bMember">扎西顿珠</span></div>
+      <div class="row"><span class="k">备注</span><span class="v" id="bRemark">暂无备注</span></div>
+    </div>
+
+    <!-- 入库清单 -->
+    <div class="group">
+      <div class="group-title">入库清单</div>
+      <div class="info-row">
+        <span class="k">存放仓库</span>
+        <span class="wh-chip">乃东路一号库</span>
+      </div>
+      <div class="info-row">
+        <span class="k">有效期至</span>
+        <span class="v">2027-07-07</span>
+      </div>
+      <div class="info-row">
+        <span class="k">批次编号</span>
+        <span class="v">pc0002</span>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll" id="tableScroll">
+          <table>
+            <thead>
+              <tr>
+                <th>序号</th>
+                <th>子编号</th>
+                <th>物料二维码</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="subTbody"></tbody>
+          </table>
+        </div>
+        <div class="slide-hint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l-6-6 6-6"/><path d="M15 6l6 6-6 6"/></svg>
+          左右滑动查看完整数据
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 行操作弹窗 -->
+  <div class="mask" id="sheetRowOp" onclick="if(event.target===this)closeSheet('sheetRowOp')">
+    <div class="sheet">
+      <div class="sheet-bar"></div>
+      <div class="sheet-title" id="rowOpTitle">子物料操作</div>
+      <div class="sheet-item" onclick="rowOp('下载二维码')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        下载二维码
+      </div>
+      <div class="sheet-item" onclick="rowOp('查看详情')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
+        查看详情
+      </div>
+      <div class="sheet-cancel" onclick="closeSheet('sheetRowOp')">取消</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  // 返回
+  function goBack(){
+    history.back();
+  }
+
+  // 子物料数据
+  var subItems = [
+    { no:'A001', batch:'pc0002', expiry:'2027-07-07', wh:'乃东路一号库' },
+    { no:'A002', batch:'pc0002', expiry:'2027-07-07', wh:'乃东路一号库' },
+    { no:'A003', batch:'pc0002', expiry:'2027-07-07', wh:'乃东路一号库' },
+    { no:'A004', batch:'pc0002', expiry:'2027-07-07', wh:'乃东路一号库' },
+    { no:'A005', batch:'pc0002', expiry:'2027-07-07', wh:'乃东路一号库' }
+  ];
+
+  // 从URL参数获取记录索引
+  var params = new URLSearchParams(location.search);
+  var recIdx = params.get('idx') || '0';
+
+  // 入库记录数据（与inbound.html一致）
+  var records = [
+    { name:'试剂', no:'a3321', batch:'pc0002', qty:10, time:'2026-07-07 08:39', remark:'暂无备注', amount:1000, cat:'化学试剂', spec:'500ml', unit:'瓶', price:100, expiry:'2027-07-07', wh:'乃东路一号库', member:'扎西顿珠' },
+    { name:'实验用手套', no:'c1025', batch:'pc0003', qty:20, time:'2026-07-06 14:22', remark:'加急入库', amount:600, cat:'防护用品', spec:'L码', unit:'副', price:30, expiry:'2028-06-30', wh:'泽当中心库', member:'次仁旺姆' },
+    { name:'离心管', no:'c2078', batch:'pc0004', qty:50, time:'2026-07-05 10:15', remark:'暂无备注', amount:750, cat:'实验耗材', spec:'15ml', unit:'包', price:15, expiry:'2028-01-31', wh:'乃东路一号库', member:'索朗扎西' }
+  ];
+
+  // 填充入库信息
+  var rec = records[parseInt(recIdx)] || records[0];
+  document.getElementById('bName').textContent = rec.name;
+  document.getElementById('bNo').textContent = rec.no;
+  document.getElementById('bCat').textContent = rec.cat;
+  document.getElementById('bSpec').textContent = rec.spec;
+  document.getElementById('bUnit').textContent = rec.unit;
+  document.getElementById('bPrice').textContent = rec.price.toFixed(2) + '元';
+  document.getElementById('bTime').textContent = rec.time;
+  document.getElementById('bQty').textContent = rec.qty;
+  document.getElementById('bMember').textContent = rec.member;
+  document.getElementById('bRemark').textContent = rec.remark;
+
+  // 填充库存信息
+  document.querySelector('.info-row .wh-chip').textContent = rec.wh;
+  document.querySelectorAll('.info-row .v')[0].textContent = rec.expiry;
+  document.querySelectorAll('.info-row .v')[1].textContent = rec.batch;
+
+  // 更新子物料数据批次号
+  subItems = subItems.map(function(s){
+    s.batch = rec.batch;
+    s.expiry = rec.expiry;
+    s.wh = rec.wh;
+    return s;
+  });
+
+  function qrMiniSvg(){
+    return '<svg class="qr-mini" viewBox="0 0 100 100">'
+      + '<rect width="100" height="100" fill="#fff"/>'
+      + '<rect x="8" y="8" width="22" height="22" fill="#1f2329"/><rect x="12" y="12" width="14" height="14" fill="#fff"/><rect x="15" y="15" width="8" height="8" fill="#1f2329"/>'
+      + '<rect x="70" y="8" width="22" height="22" fill="#1f2329"/><rect x="74" y="12" width="14" height="14" fill="#fff"/><rect x="77" y="15" width="8" height="8" fill="#1f2329"/>'
+      + '<rect x="8" y="70" width="22" height="22" fill="#1f2329"/><rect x="12" y="74" width="14" height="14" fill="#fff"/><rect x="15" y="77" width="8" height="8" fill="#1f2329"/>'
+      + '<g fill="#1f2329">'
+      + '<rect x="36" y="8" width="4" height="4"/><rect x="46" y="8" width="4" height="4"/><rect x="56" y="8" width="4" height="4"/>'
+      + '<rect x="40" y="20" width="4" height="4"/><rect x="50" y="20" width="4" height="4"/><rect x="60" y="20" width="4" height="4"/>'
+      + '<rect x="8" y="36" width="4" height="4"/><rect x="20" y="36" width="4" height="4"/><rect x="32" y="36" width="4" height="4"/><rect x="44" y="36" width="4" height="4"/><rect x="56" y="36" width="4" height="4"/><rect x="68" y="36" width="4" height="4"/><rect x="80" y="36" width="4" height="4"/><rect x="88" y="36" width="4" height="4"/>'
+      + '<rect x="14" y="48" width="4" height="4"/><rect x="26" y="48" width="4" height="4"/><rect x="38" y="48" width="4" height="4"/><rect x="50" y="48" width="4" height="4"/><rect x="62" y="48" width="4" height="4"/><rect x="74" y="48" width="4" height="4"/><rect x="86" y="48" width="4" height="4"/>'
+      + '<rect x="20" y="60" width="4" height="4"/><rect x="32" y="60" width="4" height="4"/><rect x="44" y="60" width="4" height="4"/><rect x="56" y="60" width="4" height="4"/><rect x="68" y="60" width="4" height="4"/><rect x="80" y="60" width="4" height="4"/>'
+      + '<rect x="40" y="72" width="4" height="4"/><rect x="52" y="72" width="4" height="4"/><rect x="64" y="72" width="4" height="4"/><rect x="76" y="72" width="4" height="4"/>'
+      + '<rect x="44" y="84" width="4" height="4"/><rect x="56" y="84" width="4" height="4"/><rect x="68" y="84" width="4" height="4"/><rect x="80" y="84" width="4" height="4"/>'
+      + '</g></svg>';
+  }
+
+  function renderSubTable(){
+    var tb = document.getElementById('subTbody');
+    tb.innerHTML = subItems.map(function(s, i){
+      return '<tr>'
+        + '<td>'+(i+1)+'</td>'
+        + '<td>'+s.no+'</td>'
+        + '<td>'+qrMiniSvg()+'</td>'
+        + '<td><div class="op-btns">'
+        +   '<span class="op-btn outline-blue" onclick="event.stopPropagation();quickAct(\'download\','+i+')">下载二维码</span>'
+        +   '<span class="op-btn outline-green" onclick="event.stopPropagation();quickAct(\'view\','+i+')">详情</span>'
+        + '</div></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function openRowOp(i){
+    var s = subItems[i];
+    document.getElementById('rowOpTitle').textContent = '子物料 ' + s.no;
+    window._curRow = i;
+    openSheet('sheetRowOp');
+  }
+  function rowOp(name){
+    closeSheet('sheetRowOp');
+    var i = window._curRow;
+    var s = subItems[i];
+    if(name === '下载二维码'){
+      toast('子物料 '+s.no+' 二维码已下载');
+    } else {
+      showSubDetail(i);
+    }
+  }
+  function quickAct(type, i){
+    var s = subItems[i];
+    if(type === 'download'){ toast('子物料 '+s.no+' 二维码已下载'); }
+    else { showSubDetail(i); }
+  }
+
+  function showSubDetail(i){
+    var s = subItems[i];
+    location.href = 'sub-material-detail.html?no=' + s.no;
+  }
+
+  function openSheet(id){ document.getElementById(id).classList.add('show'); }
+  function closeSheet(id){ document.getElementById(id).classList.remove('show'); }
+  function openModal(id){ document.getElementById(id).classList.add('show'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+  var toastTimer;
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  // 初始化
+  renderSubTable();
+</script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>仓库详情</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f1f4fa; color: #1f2329; }
+  .phone { position: relative; width: 375px; height: 812px; margin: 20px auto; background: #f1f4fa; border-radius: 30px; box-shadow: 0 6px 24px rgba(0,0,0,.12); overflow: hidden; display: flex; flex-direction: column; }
+  .statusbar { height: 44px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #1f2329; background: #f1f4fa; }
+  .statusbar .right { display: flex; align-items: center; gap: 6px; }
+  .navbar { height: 44px; display: flex; align-items: center; justify-content: center; position: relative; background: #f1f4fa; }
+  .navbar .back { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .navbar .title { font-size: 17px; font-weight: 600; color: #2f7bff; }
+  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  /* 仓库信息卡 */
+  .wh-card { background: #fff; border-radius: 12px; margin: 10px 14px; padding: 14px 16px; }
+  .wh-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .wh-card-head .name { font-size: 16px; font-weight: 700; color: #1f2329; }
+  .status-tag { font-size: 11px; padding: 2px 7px; border-radius: 4px; }
+  .status-tag.on { background: #e8f5ec; color: #2f9e44; }
+  .status-tag.off { background: #fdecec; color: #ff3b30; }
+  .wh-no { font-size: 12px; color: #8a8f99; margin-bottom: 8px; }
+  .wh-info-row { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; color: #4a4f57; margin-bottom: 6px; }
+  .wh-info-row svg { color: #aab0bb; flex-shrink: 0; margin-top: 1px; }
+  .wh-info-row .lbl { color: #8a8f99; flex-shrink: 0; }
+  .wh-card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; padding-top: 8px; border-top: 1px dashed #eef0f4; }
+  .wh-remark { font-size: 12px; color: #8a8f99; flex: 1; padding-right: 10px; }
+  .stock-pill { font-size: 12px; color: #2f7bff; background: #e8f0ff; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
+
+  /* 分区标题 */
+  .section-title { display: flex; align-items: center; gap: 6px; padding: 14px 14px 6px; font-size: 15px; font-weight: 600; color: #1f2329; }
+  .section-title .bar { width: 3px; height: 14px; border-radius: 2px; background: #2f7bff; }
+  .section-title .count { font-size: 12px; color: #8a8f99; font-weight: 400; margin-left: auto; }
+
+  /* 类目导航 */
+  .cat-nav { display: flex; align-items: center; gap: 8px; padding: 0 14px 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .cat-nav::-webkit-scrollbar { display: none; }
+  .cat-chip { flex-shrink: 0; height: 30px; padding: 0 14px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #4a4f57; background: #fff; border-radius: 15px; border: 1px solid #e5e7eb; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all .15s; }
+  .cat-chip.active { background: #2f7bff; color: #fff; border-color: #2f7bff; }
+
+  /* 搜索 */
+  .search-wrap { padding: 0 14px 6px; }
+  .search { display: flex; align-items: center; gap: 6px; height: 36px; background: #fff; border: 1.5px solid #2f7bff; border-radius: 10px; padding: 0 10px; }
+  .search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; color: #1f2329; }
+  .search input::placeholder { color: #aab0bb; }
+  .search svg { color: #2f7bff; }
+
+  /* 物料列表 */
+  .list { padding: 0 14px 30px; }
+  .mat-card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: transform .1s; -webkit-tap-highlight-color: transparent; }
+  .mat-card:active { transform: scale(.98); }
+  .mat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .mat-icon { width: 36px; height: 36px; border-radius: 8px; background: #e8f5ec; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .mat-info { flex: 1; min-width: 0; }
+  .mat-name { font-size: 14px; font-weight: 600; color: #1f2329; }
+  .mat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 12px; color: #4a4f57; }
+  .mat-grid .k { color: #8a8f99; }
+  .mat-grid .v { font-weight: 500; }
+  .mat-foot { display: flex; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #eef0f4; }
+  .foot-btn { flex: 1; height: 30px; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 13px; border-radius: 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .foot-btn.outline-blue { border: 1px solid #2f7bff; color: #2f7bff; }
+  .foot-btn.outline-blue:active { background: #e8f0ff; }
+  .foot-btn.outline-orange { border: 1px solid #ff8a00; color: #ff8a00; }
+  .foot-btn.outline-orange:active { background: #fff3e0; }
+
+  /* 弹窗 */
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .sheet { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 8px 0 20px; animation: slideUp .25s ease; max-height: 88%; overflow-y: auto; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 12px; }
+  .sheet-title { text-align: center; font-size: 15px; font-weight: 600; color: #1f2329; margin-bottom: 8px; }
+  .sheet-cancel-out { background: #fff; text-align: center; padding: 14px; font-size: 16px; color: #1f2329; border-radius: 16px 16px 0 0; cursor: pointer; -webkit-tap-highlight-color: transparent; margin: 8px 14px 0; }
+  .sheet-cancel-out:active { background: #f3f5f9; }
+
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- 状态栏 -->
+  <div class="statusbar">
+    <span>12:00</span>
+    <span class="right">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22l4-12 4 12H2zm10 0V8l8 14h-8z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.5 3 3.7 5.7 2 9.5L12 22l10-12.5C20.3 5.7 16.5 3 12 3z"/></svg>
+      <svg width="22" height="12" viewBox="0 0 22 12"><rect x="0" y="1" width="18" height="10" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="3" width="14" height="6" rx="1" fill="currentColor"/><rect x="20" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <!-- 导航栏 -->
+  <div class="navbar">
+    <div class="back" onclick="location.href='warehouse.html'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2f7bff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">仓库详情</div>
+  </div>
+
+  <div class="content">
+  <!-- 仓库信息卡 -->
+  <div class="wh-card" id="whInfoCard">
+    <div class="wh-card-head">
+      <span class="name" id="whName">—</span>
+      <span class="status-tag on" id="whStatus">启用</span>
+    </div>
+    <div class="wh-no" id="whNo">—</div>
+    <div class="wh-info-row" id="rowManager"></div>
+    <div class="wh-info-row" id="rowRelated"></div>
+    <div class="wh-info-row" id="rowAddr"></div>
+    <div class="wh-card-foot">
+      <div class="wh-remark" id="whRemark">—</div>
+      <div class="stock-pill" id="whStock">库存总量：0</div>
+    </div>
+  </div>
+
+  <!-- 库存物料 -->
+  <div class="section-title">
+    <span class="bar"></span>
+    库存物料
+  </div>
+
+  <!-- 类目导航 -->
+  <div class="cat-nav" id="catNav"></div>
+
+  <!-- 搜索 -->
+  <div class="search-wrap">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="搜索物料名称、编号" onkeydown="if(event.key==='Enter')doSearch()" />
+    </div>
+  </div>
+
+  <!-- 物料列表 -->
+  <div class="list" id="matList"></div>
+  </div><!-- /content -->
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  // 仓库数据
+  var warehouses = [
+    { no:'WH-001', name:'乃东路一号库', manager:'扎西顿珠', addr:'山南市乃东路21号', status:'on', remark:'存放湿试剂与核心耗材', stock:159, related:2 },
+    { no:'WH-002', name:'泽当中心库', manager:'次仁旺姆', addr:'山南市泽当大道108号', status:'on', remark:'大型物料主要取货仓', stock:74, related:3 },
+    { no:'WH-003', name:'嘎嘎仓库', manager:'扎西顿珠', addr:'', status:'off', remark:'', stock:0, related:0 }
+  ];
+
+  // 各仓库的库存物料（去掉标签）
+  var whMaterials = {
+    'WH-001': [
+      { name:'试剂A', no:'a3321', cat:'试剂', spec:'500ml/瓶', stock:9, unit:'瓶', wh:'乃东路一号库' },
+      { name:'实验用手套', no:'c1025', cat:'耗材', spec:'100副/盒', stock:50, unit:'盒', wh:'乃东路一号库' },
+      { name:'离心管', no:'c2078', cat:'耗材', spec:'1.5ml/包', stock:100, unit:'包', wh:'乃东路一号库' }
+    ],
+    'WH-002': [
+      { name:'试剂B', no:'a3322', cat:'试剂', spec:'250ml/瓶', stock:15, unit:'瓶', wh:'泽当中心库' },
+      { name:'一次性使用无菌注射器', no:'m1102', cat:'耗材', spec:'5ml/支', stock:1200, unit:'支', wh:'泽当中心库' },
+      { name:'培养皿', no:'c3010', cat:'耗材', spec:'90mm/个', stock:300, unit:'个', wh:'泽当中心库' }
+    ],
+    'WH-003': []
+  };
+
+  // 解析URL参数
+  var params = new URLSearchParams(location.search);
+  var whIdx = parseInt(params.get('idx') || '0', 10);
+  if(isNaN(whIdx) || whIdx < 0 || whIdx >= warehouses.length) whIdx = 0;
+  var wh = warehouses[whIdx];
+  var matData = whMaterials[wh.no] || [];
+  var currentList = matData.slice();
+  var currentCat = '全部';
+
+  function rowIcon(type){
+    return type==='user' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>'
+      : type==='addr' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>'
+      : type==='link' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>'
+      : '';
+  }
+
+  // 渲染仓库信息
+  function renderWhInfo(){
+    document.getElementById('whName').textContent = wh.name;
+    var st = document.getElementById('whStatus');
+    st.textContent = wh.status === 'on' ? '启用' : '禁用';
+    st.className = 'status-tag ' + wh.status;
+    document.getElementById('whNo').textContent = wh.no;
+    document.getElementById('rowManager').innerHTML = rowIcon('user') + '<span class="lbl">负责人：</span>' + (wh.manager || '—');
+    document.getElementById('rowRelated').innerHTML = rowIcon('link') + '<span class="lbl">关联类目：</span>' + (wh.related || 0) + ' 种';
+    document.getElementById('rowAddr').innerHTML = wh.addr ? rowIcon('addr') + '<span class="lbl">地址：</span>' + wh.addr : '';
+    document.getElementById('rowAddr').style.display = wh.addr ? '' : 'none';
+    document.getElementById('whRemark').textContent = wh.remark ? ('备注：' + wh.remark) : '—';
+    document.getElementById('whStock').textContent = '库存总量：' + (wh.stock || 0);
+  }
+
+  // 渲染类目导航
+  function renderCatNav(){
+    var cats = ['全部'];
+    matData.forEach(function(m){
+      if(cats.indexOf(m.cat) === -1) cats.push(m.cat);
+    });
+    var nav = document.getElementById('catNav');
+    nav.innerHTML = cats.map(function(c){
+      return '<div class="cat-chip' + (c === currentCat ? ' active' : '') + '" onclick="switchCat(\''+c+'\')">'+c+'</div>';
+    }).join('');
+  }
+
+  function switchCat(cat){
+    currentCat = cat;
+    renderCatNav();
+    applyFilter();
+  }
+
+  function applyFilter(){
+    var kw = document.getElementById('searchInput').value.trim().toLowerCase();
+    currentList = matData.filter(function(m){
+      var catOk = currentCat === '全部' || m.cat === currentCat;
+      var kwOk = !kw || (m.name||'').toLowerCase().indexOf(kw) > -1 || (m.no||'').toLowerCase().indexOf(kw) > -1;
+      return catOk && kwOk;
+    });
+    renderMat(currentList);
+  }
+
+  // 物料icon
+  function matIconSvg(){
+    return '<svg width="22" height="22" viewBox="0 0 48 48"><path d="M18 8h12v8l8 20a4 4 0 01-4 6H14a4 4 0 01-4-6l8-20V8z" fill="#5cb85c"/><rect x="18" y="8" width="12" height="5" rx="1" fill="#7ed87e"/><path d="M14 28h20" stroke="#fff" stroke-width="2"/></svg>';
+  }
+
+  // 渲染物料列表
+  function renderMat(list){
+    var wrap = document.getElementById('matList');
+    if(!list.length){
+      wrap.innerHTML = '<div style="text-align:center;color:#8a8f99;padding:50px 0;font-size:14px;">该仓库暂无库存物料</div>';
+      return;
+    }
+    wrap.innerHTML = list.map(function(m){
+      var realIdx = matData.indexOf(m);
+      return '<div class="mat-card">'
+        + '<div class="mat-head">'
+        +   '<div class="mat-icon">' + matIconSvg() + '</div>'
+        +   '<div class="mat-info">'
+        +     '<div class="mat-name">'+m.name+'</div>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="mat-grid">'
+        +   '<div><span class="k">编号：</span><span class="v">'+m.no+'</span></div>'
+        +   '<div><span class="k">类目：</span><span class="v">'+m.cat+'</span></div>'
+        +   '<div><span class="k">规格：</span><span class="v">'+m.spec+'</span></div>'
+        +   '<div><span class="k">库存：</span><span class="v">'+m.stock+' '+m.unit+'</span></div>'
+        + '</div>'
+        + '<div class="mat-foot">'
+        +   '<div class="foot-btn outline-blue" onclick="event.stopPropagation();goMatDetail('+realIdx+')">详情</div>'
+        +   '<div class="foot-btn outline-orange" onclick="event.stopPropagation();goTransfer('+realIdx+')">调拨</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function doSearch(){
+    applyFilter();
+    var kw = document.getElementById('searchInput').value.trim();
+    if(kw) toast(currentList.length ? '找到 '+currentList.length+' 条物料' : '未找到匹配物料');
+  }
+
+  // 详情 → 跳转物料详情页
+  function goMatDetail(i){
+    location.href = 'material-detail.html?from=warehouse-detail&whIdx=' + whIdx;
+  }
+
+  // 调拨 → 跳转独立页面
+  function goTransfer(i){
+    location.href = 'material-transfer.html?whIdx=' + whIdx + '&matIdx=' + i;
+  }
+
+  function closeSheet(id){ document.getElementById(id).classList.remove('show'); }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  // 初始渲染
+  renderWhInfo();
+  renderCatNav();
+  renderMat(currentList);
+</script>
+</body>
+</html>

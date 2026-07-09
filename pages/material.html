@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物料 - 物料列表</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  html, body {
+    background: #e9eef5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif;
+    color: #1f2329;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  body { padding: 24px 0; }
+  .phone {
+    width: 390px; min-height: 844px;
+    background: #f1f4fa;
+    border-radius: 44px;
+    box-shadow: 0 20px 50px rgba(20, 40, 80, 0.18);
+    overflow: hidden; position: relative; padding-bottom: 30px;
+  }
+  .status-bar { height: 44px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; }
+  .status-right { display: flex; align-items: center; gap: 6px; }
+  .status-right svg { display: block; }
+  .nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; height: 44px; padding: 0 8px; }
+  .nav .back, .nav .more { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #2f7bff; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: opacity .15s; text-decoration: none; }
+  .nav .back:active, .nav .more:active { opacity: .5; }
+  .nav .title { text-align: center; font-size: 17px; font-weight: 600; color: #2f7bff; }
+  .nav .more svg circle { fill: #2f7bff; }
+  .tabs { display: flex; align-items: center; padding: 4px 8px 0; background: #f1f4fa; }
+  .tab { flex: 1; text-align: center; font-size: 15px; color: #1f2329; padding: 8px 0 10px; position: relative; white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .tab.active { color: #2f7bff; font-weight: 600; }
+  .tab.active::after { content: ""; position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%); width: 22px; height: 3px; border-radius: 2px; background: #2f7bff; }
+  .search-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 10px 14px 8px; background: #f1f4fa; }
+  .search-box { background: #fff; border: 1.5px solid #4f8bff; border-radius: 8px; height: 36px; display: flex; align-items: center; padding: 0 10px; gap: 6px; }
+  .search-box svg { color: #8a8f99; }
+  .search-box input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; color: #1f2329; }
+  .search-box input::placeholder { color: #b8bcc4; }
+  .filter { background: #fff; border-radius: 8px; height: 36px; padding: 0 10px; display: flex; align-items: center; gap: 4px; color: #4a4f57; font-size: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .filter:active { background: #eef2f9; }
+  .filter svg { color: #8a8f99; }
+  .list { padding: 6px 14px 120px; }
+  .card { background: #fff; border-radius: 12px; margin-bottom: 12px; padding: 14px 14px 0; box-shadow: 0 2px 6px rgba(20, 40, 80, 0.04); }
+  .card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .card-icon { width: 38px; height: 38px; background: #5cb85c; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; }
+  .card-title { flex: 1; }
+  .card-title .name { font-size: 15px; font-weight: 600; color: #1f2329; margin-bottom: 4px; }
+  .tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; line-height: 1.6; }
+  .tag-red { background: #ffeaea; color: #ff3b30; }
+  .tag-orange { background: #fff1de; color: #ff8a00; }
+  .tag-blue { background: #e3eeff; color: #2f7bff; }
+  .card-body { border-top: 1px solid #f0f2f5; padding: 10px 0; display: grid; grid-template-columns: 1fr 1fr; row-gap: 6px; }
+  .field { font-size: 12px; color: #4a4f57; }
+  .field .k { color: #8a8f99; }
+  .field .v { color: #1f2329; font-weight: 500; }
+  .field .v.bold { font-weight: 700; }
+  .card-foot { border-top: 1px solid #f0f2f5; display: grid; grid-template-columns: 1fr 1fr; }
+  .foot-btn { height: 40px; display: flex; align-items: center; justify-content: center; gap: 4px; color: #4a4f57; font-size: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s; }
+  .foot-btn:active { background: #f3f5f9; }
+  .foot-btn + .foot-btn { border-left: 1px solid #f0f2f5; }
+  .foot-btn svg { color: #8a8f99; }
+  .fab { position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; background: #2f7bff; color: #fff; height: 46px; width: 200px; border-radius: 23px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 16px rgba(47, 123, 255, .35); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s; }
+  .fab:active { transform: translateX(-50%) scale(.96); }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .sheet { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 8px 0 20px; animation: slideUp .25s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet .sheet-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 12px; }
+  .sheet .sheet-title { text-align: center; font-size: 15px; font-weight: 600; color: #1f2329; margin-bottom: 8px; }
+  .sheet-item { height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 22px; font-size: 15px; color: #1f2329; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .sheet-item:active { background: #f3f5f9; }
+  .sheet-item.danger { color: #ff3b30; }
+  .sheet-item svg { color: #4a4f57; }
+  .sheet-item.danger svg { color: #ff3b30; }
+  .sheet-cancel { margin-top: 6px; border-top: 8px solid #f1f4fa; height: 50px; display: flex; align-items: center; justify-content: center; color: #8a8f99; font-size: 15px; cursor: pointer; }
+  .sheet-tight .sheet-item { padding: 14px 0; font-size: 16px; justify-content: center; }
+  .sheet-tight .sheet-item.danger { color: #ff3b30; }
+  .sheet-group { width: 100%; padding: 0 0 18px; animation: slideUp .25s ease; }
+  .sheet-group .sheet { width: 100%; border-radius: 16px 16px 0 0; padding: 8px 0 14px; }
+  .sheet-group .sheet-cancel-out { margin: 8px 0 0; }
+  .sheet-cancel-out { background: #fff; text-align: center; padding: 14px; font-size: 16px; color: #1f2329; border-radius: 16px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .sheet-cancel-out:active { background: #f3f4f6; }
+  .modal-center { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: center; justify-content: center; padding: 0 24px; }
+  .modal-center.show { display: flex; }
+  .modal-box { width: 100%; background: #fff; border-radius: 14px; padding: 18px 16px 12px; animation: pop .2s ease; }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-box h4 { font-size: 16px; margin-bottom: 12px; text-align: center; }
+  .modal-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+  .modal-row:last-of-type { border-bottom: 0; }
+  .modal-row .k { color: #8a8f99; }
+  .modal-row .v { color: #1f2329; font-weight: 500; }
+  .modal-close { margin-top: 10px; height: 40px; border-radius: 8px; background: #2f7bff; color: #fff; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  /* 筛选面板 */
+  .sheet-tall { padding-bottom: 0; }
+  .filter-group { padding: 4px 18px 14px; border-bottom: 1px solid #f0f2f5; }
+  .filter-group:last-of-type { border-bottom: 0; }
+  .filter-label { font-size: 14px; font-weight: 600; color: #1f2329; margin: 8px 0 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 6px 14px; border-radius: 16px;
+    font-size: 13px; color: #4a4f57;
+    background: #f3f5f9; border: 1px solid #f3f5f9;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: all .15s;
+  }
+  .chip.on { background: #e8f1ff; color: #2f7bff; border-color: #2f7bff; font-weight: 500; }
+  .filter-foot { display: grid; grid-template-columns: 1fr 1fr; margin-top: 10px; }
+  .filter-foot .btn-reset, .filter-foot .btn-ok {
+    height: 50px; display: flex; align-items: center; justify-content: center;
+    font-size: 15px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .filter-foot .btn-reset { color: #4a4f57; border-top: 1px solid #f0f2f5; }
+  .filter-foot .btn-ok { color: #fff; background: #2f7bff; font-weight: 600; }
+  .filter-foot .btn-reset:active { background: #f3f5f9; }
+  .filter-foot .btn-ok:active { background: #1f6ae8; }
+  .filter-active-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ff3b30; margin-left: 4px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar">
+    <span>12:00</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0"  y="7" width="3" height="4" rx="0.5" fill="#1f2329"/><rect x="4.5" y="5" width="3" height="6" rx="0.5" fill="#1f2329"/><rect x="9" y="2.5" width="3" height="8.5" rx="0.5" fill="#1f2329"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="#1f2329"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11"><path d="M8 10.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#1f2329"/><path d="M3.5 6.2a6.4 6.4 0 019 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M1 3.5a9.5 9.5 0 0114 0" stroke="#1f2329" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="#1f2329" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="#1f2329"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#1f2329" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="back" onclick="location.href='home.html'" aria-label="返回首页">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2f7bff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">物料</div>
+    <div class="more">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#2f7bff"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(this)">物料列表</div>
+    <div class="tab" onclick="switchTab(this)">入库</div>
+    <div class="tab" onclick="switchTab(this)">出库</div>
+    <div class="tab" onclick="switchTab(this)">类目</div>
+    <div class="tab" onclick="switchTab(this)">仓库</div>
+  </div>
+
+  <div class="search-row">
+    <div class="search-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="searchInput" placeholder="请输入物料名称或编号" onkeydown="if(event.key==='Enter')doSearch()" />
+    </div>
+    <div class="filter" onclick="openFilter()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 9v6l-4-2v-4L3 5z"/></svg>
+      筛选<span id="filterDot" class="filter-active-dot" style="display:none"></span>
+    </div>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div class="fab">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    添加物料
+  </div>
+
+  <!-- 操作菜单 -->
+  <div class="mask" id="sheetAction" onclick="if(event.target===this)closeSheet('sheetAction')">
+    <div class="sheet-group" onclick="event.stopPropagation()">
+      <div class="sheet sheet-tight">
+        <div class="sheet-bar"></div>
+        <div class="sheet-item" onclick="act('详情')">详情</div>
+        <div class="sheet-item" onclick="act('编辑')">编辑</div>
+        <div class="sheet-item" onclick="act('库存预警')">库存预警</div>
+        <div class="sheet-item danger" onclick="act('删除')">删除</div>
+      </div>
+      <div class="sheet-cancel-out" onclick="closeSheet('sheetAction')">取消</div>
+    </div>
+  </div>
+
+  <!-- 详情弹窗 -->
+  <div class="modal-center" id="modalDetail" onclick="if(event.target===this)closeModal('modalDetail')">
+    <div class="modal-box">
+      <h4 id="detailTitle">物料详情</h4>
+      <div id="detailBody"></div>
+      <div class="modal-close" onclick="closeModal('modalDetail')">关闭</div>
+    </div>
+  </div>
+
+  <!-- 筛选面板 -->
+  <div class="mask" id="sheetFilter" onclick="if(event.target===this)closeSheet('sheetFilter')">
+    <div class="sheet sheet-tall">
+      <div class="sheet-bar"></div>
+      <div class="sheet-title">筛选</div>
+      <div class="filter-group">
+        <div class="filter-label">类目</div>
+        <div class="chips" id="chipsCat"></div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">存放仓库</div>
+        <div class="chips" id="chipsWh"></div>
+      </div>
+      <div class="filter-foot">
+        <div class="btn-reset" onclick="resetFilter()">重置</div>
+        <div class="btn-ok" onclick="applyFilter()">确定</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  var materials = [
+    { name:'试剂', no:'a3321', cat:'试剂', spec:'500ml/瓶', stock:9, unit:'瓶', wh:'乃东路一号库',
+      tags:[{t:'orange',s:'部分库存失效/即将失效'}] },
+    { name:'试剂', no:'a3321', cat:'试剂', spec:'500ml/瓶', stock:15, unit:'瓶', wh:'泽当中心库', tags:[] },
+    { name:'一次性使用无菌注射器', no:'m1102', cat:'耗材', spec:'5ml/支', stock:1200, unit:'支', wh:'泽当中心库', tags:[] }
+  ];
+  var currentList = materials.slice();
+
+  function render(arr){
+    var list = document.getElementById('list');
+    if(!arr.length){ list.innerHTML = '<div style="text-align:center;color:#8a8f99;font-size:13px;padding:40px 0;">暂无符合条件的物料</div>'; return; }
+    list.innerHTML = arr.map(function(m,i){
+      var tags = (m.tags||[]).map(function(g){ return '<span class="tag tag-'+g.t+'">'+g.s+'</span>'; }).join('');
+      return '<div class="card">'
+        + '<div class="card-head">'
+        + '<div class="card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M9 3h6v3l2 3v9a2 2 0 01-2 2H9a2 2 0 01-2-2V9l2-3V3z" fill="#fff" stroke="none"/><path d="M9 3h6v3l2 3v9a2 2 0 01-2 2H9a2 2 0 01-2-2V9l2-3V3z"/><path d="M7 10h10"/></svg></div>'
+        + '<div class="card-title"><div class="name">'+m.name+'</div><div class="tag-row">'+tags+'</div></div>'
+        + '</div>'
+        + '<div class="card-body">'
+        + '<div class="field"><span class="k">物料编号：</span><span class="v">'+m.no+'</span></div>'
+        + '<div class="field"><span class="k">类目：</span><span class="v">'+m.cat+'</span></div>'
+        + '<div class="field"><span class="k">规格：</span><span class="v">'+m.spec+'</span></div>'
+        + '<div class="field"><span class="k">库存：</span><span class="v bold">'+m.stock+'</span><span class="v"> '+m.unit+'</span></div>'
+        + '<div class="field" style="grid-column: 1 / -1;"><span class="k">存放仓库：</span><span class="v">'+m.wh+'</span></div>'
+        + '</div>'
+        + '<div class="card-foot">'
+        + '<div class="foot-btn" onclick="showDetail('+i+')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v.01"/><path d="M12 8a2 2 0 012 2c0 1-1 1.5-1.5 2S12 13 12 14"/></svg>详情</div>'
+        + '<div class="foot-btn" onclick="openAction('+i+')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>操作</div>'
+        + '</div></div>';
+    }).join('');
+  }
+
+  function switchTab(el){
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    el.classList.add('active');
+    var name = el.textContent.trim();
+    if(name === '物料列表'){
+      currentList = materials.slice();
+      render(currentList);
+    } else if(name === '入库'){
+      location.href = 'inbound.html';
+    } else if(name === '出库'){
+      location.href = 'outbound.html';
+    } else if(name === '仓库'){
+      location.href = 'warehouse.html';
+    } else {
+      toast('「'+name+'」页面待开发');
+    }
+  }
+
+  function doSearch(){
+    var kw = document.getElementById('searchInput').value.trim().toLowerCase();
+    if(!kw){ currentList = materials.slice(); render(currentList); return; }
+    currentList = materials.filter(function(m){
+      return m.name.toLowerCase().indexOf(kw) > -1 || m.no.toLowerCase().indexOf(kw) > -1;
+    });
+    render(currentList);
+    toast(currentList.length ? '找到 ' + currentList.length + ' 条结果' : '未找到匹配物料');
+  }
+
+  function doFilter(type){
+    closeSheet('sheetFilter');
+    if(type === '全部'){ currentList = materials.slice(); }
+    else if(type === '低库存'){ currentList = materials.filter(function(m){ return m.stock < 20; }); }
+    else if(type === '即将失效'){ currentList = materials.filter(function(m){ return (m.tags||[]).some(function(g){ return g.t==='orange'; }); }); }
+    else if(type === '已失效'){ currentList = materials.filter(function(m){ return (m.tags||[]).some(function(g){ return g.t==='red'; }); }); }
+    render(currentList);
+    toast('筛选：' + type + '（'+currentList.length+'条）');
+  }
+
+  // 类目 + 仓库 多选筛选
+  var selCat = [], selWh = [];
+  function uniq(arr){ var r = []; arr.forEach(function(x){ if(r.indexOf(x)<0) r.push(x); }); return r; }
+  function buildChips(){
+    var cats = uniq(materials.map(function(m){ return m.cat; }));
+    var whs  = uniq(materials.map(function(m){ return m.wh; }));
+    document.getElementById('chipsCat').innerHTML = cats.map(function(c){
+      return '<span class="chip'+(selCat.indexOf(c)>-1?' on':'')+'" onclick="toggleChip(\'cat\',this)">'+c+'</span>';
+    }).join('');
+    document.getElementById('chipsWh').innerHTML = whs.map(function(w){
+      return '<span class="chip'+(selWh.indexOf(w)>-1?' on':'')+'" onclick="toggleChip(\'wh\',this)">'+w+'</span>';
+    }).join('');
+  }
+  function toggleChip(type, el){
+    var val = el.textContent;
+    var arr = type==='cat' ? selCat : selWh;
+    var i = arr.indexOf(val);
+    if(i>-1){ arr.splice(i,1); el.classList.remove('on'); }
+    else { arr.push(val); el.classList.add('on'); }
+  }
+  function openFilter(){ buildChips(); openSheet('sheetFilter'); }
+  function resetFilter(){
+    selCat = []; selWh = [];
+    document.querySelectorAll('#chipsCat .chip, #chipsWh .chip').forEach(function(c){ c.classList.remove('on'); });
+  }
+  function applyFilter(){
+    closeSheet('sheetFilter');
+    currentList = materials.filter(function(m){
+      var catOk = !selCat.length || selCat.indexOf(m.cat) > -1;
+      var whOk  = !selWh.length  || selWh.indexOf(m.wh)  > -1;
+      return catOk && whOk;
+    });
+    render(currentList);
+    var has = selCat.length || selWh.length;
+    var dot = document.getElementById('filterDot');
+    if(dot){ dot.style.display = has ? 'inline-block' : 'none'; }
+    var desc = [];
+    if(selCat.length) desc.push('类目'+selCat.length);
+    if(selWh.length)  desc.push('仓库'+selWh.length);
+    toast(has ? ('已筛选：' + desc.join('·') + '（'+currentList.length+'条）') : ('已显示全部（'+currentList.length+'条）'));
+  }
+
+  function showDetail(i){
+    // 跳转到详情页
+    window.location.href = 'material-detail.html';
+  }
+
+  var actionIndex = -1;
+  function openAction(i){ actionIndex = i; openSheet('sheetAction'); }
+  function act(name){
+    closeSheet('sheetAction');
+    if(actionIndex < 0) return;
+    var m = currentList[actionIndex];
+    if(name === '删除'){
+      materials = materials.filter(function(x){ return !(x===m); });
+      currentList = currentList.filter(function(x){ return !(x===m); });
+      render(currentList);
+      toast('已删除：' + m.name);
+    } else if(name === '详情'){
+      location.href = 'material-detail.html';
+    } else if(name === '编辑'){
+      toast('「'+m.name+'」编辑（功能待开发）');
+    } else if(name === '库存预警'){
+      toast('已为「'+m.name+'」开启库存预警');
+    } else {
+      toast('「'+name+'」操作：' + m.name + '（功能待开发）');
+    }
+    actionIndex = -1;
+  }
+
+  function openSheet(id){ document.getElementById(id).classList.add('show'); }
+  function closeSheet(id){ document.getElementById(id).classList.remove('show'); }
+  function openModal(id){ document.getElementById(id).classList.add('show'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+  var toastTimer;
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  render(currentList);
+</script>
+</body>
+</html>
