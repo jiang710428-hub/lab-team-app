@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>基础管理</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f1f4fa; color: #1f2329; }
+  .phone { position: relative; width: 375px; height: 812px; margin: 20px auto; background: #f1f4fa; border-radius: 30px; box-shadow: 0 6px 24px rgba(0,0,0,.12); overflow: hidden; }
+  .statusbar { height: 44px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #1f2329; background: #f1f4fa; }
+  .statusbar .right { display: flex; align-items: center; gap: 6px; }
+  .navbar { height: 44px; display: flex; align-items: center; position: relative; background: #f1f4fa; padding: 0 12px; }
+  .navbar .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+  .navbar .title { flex: 1; font-size: 17px; font-weight: 600; color: #1f2329; text-align: center; margin-right: 32px; }
+  .tabs { display: flex; background: #f1f4fa; padding: 0 14px; }
+  .tab { flex: 1; text-align: center; font-size: 14px; color: #8a8f99; padding: 10px 0; position: relative; cursor: pointer; font-weight: 500; }
+  .tab.active { color: #2f7bff; font-weight: 600; }
+  .tab.active::after { content: ''; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 24px; height: 3px; background: #2f7bff; border-radius: 2px; }
+  .search-wrap { padding: 8px 14px 6px; background: #f1f4fa; }
+  .search { display: flex; align-items: center; gap: 6px; height: 36px; background: #fff; border-radius: 10px; padding: 0 10px; border: 1.5px solid #e5e7eb; }
+  .search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; color: #1f2329; }
+  .search input::placeholder { color: #aab0bb; }
+  .list { padding: 8px 14px 100px; overflow-y: auto; height: calc(100% - 44px - 44px - 44px - 50px); }
+  .card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .card:active { background: #f8f9fb; }
+  .card-title { font-size: 15px; font-weight: 600; color: #1f2329; margin-bottom: 6px; }
+  .card-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8a8f99; margin-bottom: 4px; }
+  .card-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: #d0d4dc; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .card-remark { font-size: 12px; color: #8a8f99; flex: 1; padding-right: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card-actions { display: flex; gap: 12px; }
+  .icon-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #8a8f99; }
+  .icon-btn:active { color: #2f7bff; }
+  .fab { position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; background: #2f7bff; color: #fff; height: 46px; width: 200px; border-radius: 23px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 16px rgba(47,123,255,.35); cursor: pointer; }
+  .fab:active { transform: translateX(-50%) scale(.96); }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .modal { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 10px 0 28px; animation: slideUp .25s ease; max-height: 92%; overflow-y: auto; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 14px; }
+  .modal h4 { font-size: 16px; text-align: center; margin-bottom: 14px; color: #1f2329; }
+  .form-body { padding: 0 16px; }
+  .form-item { margin-bottom: 14px; }
+  .form-item .lbl { font-size: 13px; color: #4a4f57; margin-bottom: 6px; }
+  .form-item .lbl .req { color: #ff3b30; }
+  .form-item .ipt { width: 100%; height: 40px; background: #f6f7f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; font-size: 14px; color: #1f2329; outline: 0; }
+  .form-item .ipt:focus { border-color: #2f7bff; background: #fff; }
+  .form-item .ipt[disabled] { color: #aab0bb; background: #f0f1f3; }
+  .form-item textarea.ipt { height: 76px; padding: 8px 12px; resize: none; }
+  .form-item .ipt-sel { width: 100%; height: 40px; background: #f6f7f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; font-size: 14px; color: #1f2329; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .form-item .ipt-sel:active { background: #eee; }
+  .form-item .ipt-sel .placeholder { color: #aab0bb; }
+  .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .btn { flex: 1; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .btn.cancel { background: #f3f4f6; color: #4a4f57; }
+  .btn.primary { background: #2f7bff; color: #fff; }
+  .btn:active { transform: scale(.97); }
+  .dept-list { max-height: 260px; overflow-y: auto; }
+  .dept-item { height: 44px; display: flex; align-items: center; padding: 0 16px; font-size: 14px; color: #1f2329; cursor: pointer; border-bottom: 1px solid #f0f2f5; }
+  .dept-item:active { background: #f6f7f9; }
+  .dept-item.selected { color: #2f7bff; font-weight: 600; }
+  .dept-item.selected::after { content: '✓'; margin-left: auto; color: #2f7bff; font-weight: 700; }
+  .confirm-mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 60; display: none; align-items: center; justify-content: center; padding: 0 40px; }
+  .confirm-mask.show { display: flex; }
+  .confirm-box { width: 100%; max-width: 280px; background: #fff; border-radius: 14px; overflow: hidden; animation: pop .2s ease; }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .confirm-title { font-size: 16px; font-weight: 600; text-align: center; padding: 22px 20px 8px; color: #1f2329; }
+  .confirm-msg { font-size: 14px; text-align: center; padding: 0 20px 20px; color: #8a8f99; line-height: 1.5; }
+  .confirm-btns { display: flex; border-top: 1px solid #eef0f4; }
+  .confirm-btns .cb { flex: 1; height: 46px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+  .confirm-btns .cb.cancel { color: #4a4f57; border-right: 1px solid #eef0f4; }
+  .confirm-btns .cb.ok { color: #e53935; }
+  .confirm-btns .cb:active { background: #f3f5f9; }
+  .empty-state { text-align: center; color: #8a8f99; padding: 60px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="statusbar">
+    <span>12:00</span>
+    <span class="right">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22l4-12 4 12H2zm10 0V8l8 14h-8z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.5 3 3.7 5.7 2 9.5L12 22l10-12.5C20.3 5.7 16.5 3 12 3z"/></svg>
+      <svg width="22" height="12" viewBox="0 0 22 12"><rect x="0" y="1" width="18" height="10" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="3" width="14" height="6" rx="1" fill="currentColor"/><rect x="20" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <div class="navbar">
+    <div class="back" onclick="location.href='home.html'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f2329" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">基础管理</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabCollege" onclick="switchTab('college')">学院管理</div>
+    <div class="tab" id="tabCourse" onclick="switchTab('course')">课程管理</div>
+    <div class="tab" id="tabDept" onclick="switchTab('dept')">教研室管理</div>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="搜索" oninput="doSearch()" />
+    </div>
+  </div>
+
+  <div class="list" id="dataList"></div>
+
+  <div class="fab" onclick="openForm(-1)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    <span id="fabText">新增学院</span>
+  </div>
+
+  <!-- 表单弹窗 -->
+  <div class="mask" id="formModal" onclick="if(event.target===this)closeForm()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-bar"></div>
+      <h4 id="formTitle">新增</h4>
+      <div class="form-body" id="formBody"></div>
+      <div class="form-actions" style="padding:0 16px;">
+        <div class="btn cancel" onclick="closeForm()">取消</div>
+        <div class="btn primary" onclick="saveForm()">保存</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 选择器弹窗 -->
+  <div class="mask" id="selectModal" onclick="if(event.target===this)closeSelect()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-bar"></div>
+      <h4 id="selectTitle">请选择</h4>
+      <div class="dept-list" id="selectList"></div>
+      <div class="form-actions" style="padding:12px 16px 0;">
+        <div class="btn cancel" onclick="closeSelect()">取消</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认 -->
+  <div class="confirm-mask" id="confirmDel" onclick="if(event.target===this)closeConfirm()">
+    <div class="confirm-box">
+      <div class="confirm-title">确认删除</div>
+      <div class="confirm-msg" id="confirmMsg">删除后不可恢复，是否继续？</div>
+      <div class="confirm-btns">
+        <div class="cb cancel" onclick="closeConfirm()">取消</div>
+        <div class="cb ok" onclick="confirmDelete()">删除</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  var colleges = [
+    { id:1, name:'临床学院', code:'COL-001', admin:'张教授', address:'医学楼A座', remark:'承担临床医学专业教学与实训' },
+    { id:2, name:'药学院', code:'COL-002', admin:'李教授', address:'药学楼B座', remark:'承担药学与药物制剂专业教学' },
+    { id:3, name:'基础医学院', code:'COL-003', admin:'王教授', address:'医学楼C座', remark:'承担基础医学课程教学' }
+  ];
+
+  var courses = [
+    { id:1, name:'临床诊断学', code:'CRS-001', content:'体格检查、病史采集、临床思维训练', admin:'张教授', remark:'临床医学专业核心课程' },
+    { id:2, name:'药物化学', code:'CRS-002', content:'药物设计、合成路线、构效关系', admin:'李教授', remark:'药学专业必修课程' },
+    { id:3, name:'人体解剖学', code:'CRS-003', content:'系统解剖、局部解剖、断层解剖', admin:'王教授', remark:'基础医学核心课程' }
+  ];
+
+  var depts = [
+    { id:1, college:'临床学院', name:'内科教研室', director:'张教授', remark:'承担内科学教学与临床实训' },
+    { id:2, college:'药学院', name:'药物分析教研室', director:'李教授', remark:'承担药物分析与质量控制课程' },
+    { id:3, college:'基础医学院', name:'解剖学教研室', director:'王教授', remark:'承担人体解剖学理论与实验教学' }
+  ];
+
+  var adminList = ['张教授','李教授','王教授','赵教授','陈教授','周教授','刘教授','孙教授'];
+  var collegeList = ['临床学院','药学院','基础医学院','公共卫生学院','护理学院','口腔医学院'];
+
+  var activeTab = 'college';
+  var editingId = -1;
+  var pendingDelId = -1;
+  var formAdmin = '', formCollege = '', formDirector = '';
+  var selectTarget = '';
+  var colCodeNum = 4, crsCodeNum = 4;
+
+  function switchTab(tab){
+    activeTab = tab;
+    document.getElementById('tabCollege').classList.toggle('active', tab==='college');
+    document.getElementById('tabCourse').classList.toggle('active', tab==='course');
+    document.getElementById('tabDept').classList.toggle('active', tab==='dept');
+    document.getElementById('fabText').textContent = tab==='college' ? '新增学院' : tab==='course' ? '新增课程' : '新增教研室';
+    document.getElementById('searchInput').placeholder = tab==='college' ? '搜索学院名称/负责人' : tab==='course' ? '搜索课程名称/负责人' : '搜索教研室名称/所属学院';
+    document.getElementById('searchInput').value = '';
+    doSearch();
+  }
+
+  function getData(){
+    if(activeTab==='college') return colleges;
+    if(activeTab==='course') return courses;
+    return depts;
+  }
+
+  function doSearch(){
+    var kw = document.getElementById('searchInput').value.trim().toLowerCase();
+    var data = getData();
+    if(!kw){ render(data); return; }
+    var filtered = data.filter(function(d){
+      if(activeTab==='college') return (d.name||'').toLowerCase().indexOf(kw)>-1 || (d.admin||'').toLowerCase().indexOf(kw)>-1;
+      if(activeTab==='course') return (d.name||'').toLowerCase().indexOf(kw)>-1 || (d.admin||'').toLowerCase().indexOf(kw)>-1;
+      return (d.name||'').toLowerCase().indexOf(kw)>-1 || (d.college||'').toLowerCase().indexOf(kw)>-1 || (d.director||'').toLowerCase().indexOf(kw)>-1;
+    });
+    render(filtered);
+  }
+
+  function render(data){
+    var wrap = document.getElementById('dataList');
+    if(!data.length){ wrap.innerHTML = '<div class="empty-state">暂无数据</div>'; return; }
+    if(activeTab==='college'){
+      wrap.innerHTML = data.map(function(d){
+        return '<div class="card" onclick="goDetail(\'college\','+d.id+')">'
+          + '<div class="card-title">' + d.name + '</div>'
+          + '<div class="card-meta"><span>' + d.code + '</span><span class="dot"></span><span>负责人：' + (d.admin||'—') + '</span></div>'
+          + '<div class="card-meta"><span>地址：' + (d.address||'—') + '</span></div>'
+          + '<div class="card-foot">'
+          +   '<div class="card-remark">' + (d.remark||'暂无备注') + '</div>'
+          +   '<div class="card-actions">'
+          +     '<div class="icon-btn" onclick="event.stopPropagation();editItem(' + d.id + ')" title="编辑"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"/></svg></div>'
+          +     '<div class="icon-btn" onclick="event.stopPropagation();delItem(' + d.id + ')" title="删除"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></div>'
+          +   '</div>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    } else if(activeTab==='course'){
+      wrap.innerHTML = data.map(function(d){
+        return '<div class="card" onclick="goDetail(\'course\','+d.id+')">'
+          + '<div class="card-title">' + d.name + '</div>'
+          + '<div class="card-meta"><span>' + d.code + '</span><span class="dot"></span><span>负责人：' + (d.admin||'—') + '</span></div>'
+          + '<div class="card-meta"><span>内容：' + (d.content||'—') + '</span></div>'
+          + '<div class="card-foot">'
+          +   '<div class="card-remark">' + (d.remark||'暂无备注') + '</div>'
+          +   '<div class="card-actions">'
+          +     '<div class="icon-btn" onclick="event.stopPropagation();editItem(' + d.id + ')" title="编辑"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"/></svg></div>'
+          +     '<div class="icon-btn" onclick="event.stopPropagation();delItem(' + d.id + ')" title="删除"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></div>'
+          +   '</div>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    } else {
+      wrap.innerHTML = data.map(function(d){
+        return '<div class="card" onclick="goDetail(\'dept\','+d.id+')">'
+          + '<div class="card-title">' + d.name + '</div>'
+          + '<div class="card-meta"><span>所属学院（部门）：' + (d.college||'—') + '</span></div>'
+          + '<div class="card-meta"><span>教研室主任：' + (d.director||'—') + '</span></div>'
+          + '<div class="card-foot">'
+          +   '<div class="card-remark">' + (d.remark||'暂无备注') + '</div>'
+          +   '<div class="card-actions">'
+          +     '<div class="icon-btn" onclick="event.stopPropagation();editItem(' + d.id + ')" title="编辑"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"/></svg></div>'
+          +     '<div class="icon-btn" onclick="event.stopPropagation();delItem(' + d.id + ')" title="删除"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></div>'
+          +   '</div>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
+  }
+
+  // ========== 跳转详情 ==========
+  function goDetail(type, id){
+    sessionStorage.setItem('collegeData', JSON.stringify(colleges));
+    sessionStorage.setItem('courseData', JSON.stringify(courses));
+    sessionStorage.setItem('deptData', JSON.stringify(depts));
+    location.href = 'basic-detail.html?type=' + type + '&id=' + id;
+  }
+
+  // ========== 表单 ==========
+  function genCode(tab){
+    var num;
+    if(tab==='college'){ num = colCodeNum++; return 'COL-' + String(num).padStart(3,'0'); }
+    if(tab==='course'){ num = crsCodeNum++; return 'CRS-' + String(num).padStart(3,'0'); }
+    return '';
+  }
+
+  function setSelText(id, text){
+    var el = document.getElementById(id);
+    el.querySelector('span').textContent = text;
+    if(text.indexOf('请选择')===0) el.querySelector('span').classList.add('placeholder');
+    else el.querySelector('span').classList.remove('placeholder');
+  }
+
+  function openForm(id){
+    editingId = id;
+    document.getElementById('formTitle').textContent = id<0 ? '新增' : '编辑';
+    formAdmin = ''; formCollege = ''; formDirector = '';
+
+    var body = document.getElementById('formBody');
+    if(activeTab==='college'){
+      body.innerHTML = ''
+        + '<div class="form-item"><div class="lbl"><span class="req">*</span> 学院名称（部门）</div><input class="ipt" id="fName" placeholder="请输入学院名称（部门）" /></div>'
+        + '<div class="form-item"><div class="lbl">学院编号</div><input class="ipt" id="fCode" disabled placeholder="系统自动生成" /></div>'
+        + '<div class="form-item"><div class="lbl">负责人</div><div class="ipt-sel" id="fAdmin" onclick="openSelect(\'admin\')"><span class="placeholder">请选择负责人</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div></div>'
+        + '<div class="form-item"><div class="lbl">地址</div><input class="ipt" id="fAddress" placeholder="请输入地址" /></div>'
+        + '<div class="form-item"><div class="lbl">备注</div><textarea class="ipt" id="fRemark" placeholder="请输入备注"></textarea></div>';
+    } else if(activeTab==='course'){
+      body.innerHTML = ''
+        + '<div class="form-item"><div class="lbl"><span class="req">*</span> 课程名称</div><input class="ipt" id="fName" placeholder="请输入课程名称" /></div>'
+        + '<div class="form-item"><div class="lbl">课程编号</div><input class="ipt" id="fCode" disabled placeholder="系统自动生成" /></div>'
+        + '<div class="form-item"><div class="lbl">课程内容</div><textarea class="ipt" id="fContent" placeholder="请输入课程内容"></textarea></div>'
+        + '<div class="form-item"><div class="lbl">负责人</div><div class="ipt-sel" id="fAdmin" onclick="openSelect(\'admin\')"><span class="placeholder">请选择负责人</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div></div>'
+        + '<div class="form-item"><div class="lbl">备注</div><textarea class="ipt" id="fRemark" placeholder="请输入备注"></textarea></div>';
+    } else {
+      body.innerHTML = ''
+        + '<div class="form-item"><div class="lbl"><span class="req">*</span> 所属学院（部门）</div><div class="ipt-sel" id="fCollege" onclick="openSelect(\'college\')"><span class="placeholder">请选择所属学院（部门）</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div></div>'
+        + '<div class="form-item"><div class="lbl"><span class="req">*</span> 教研室名称</div><input class="ipt" id="fName" placeholder="请输入教研室名称" /></div>'
+        + '<div class="form-item"><div class="lbl">教研室主任</div><div class="ipt-sel" id="fDirector" onclick="openSelect(\'director\')"><span class="placeholder">请选择教研室主任</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div></div>'
+        + '<div class="form-item"><div class="lbl">备注</div><textarea class="ipt" id="fRemark" placeholder="请输入备注"></textarea></div>';
+    }
+
+    if(id<0){
+      if(activeTab==='college') document.getElementById('fCode').value = genCode('college');
+      else if(activeTab==='course') document.getElementById('fCode').value = genCode('course');
+    } else {
+      var data = getData();
+      var d = data.find(function(x){ return x.id===id; });
+      if(!d){ closeForm(); return; }
+      document.getElementById('fName').value = d.name||'';
+      if(activeTab==='college'){
+        document.getElementById('fCode').value = d.code||'';
+        document.getElementById('fAddress').value = d.address||'';
+        document.getElementById('fRemark').value = d.remark||'';
+        formAdmin = d.admin||'';
+        setSelText('fAdmin', formAdmin||'请选择负责人');
+      } else if(activeTab==='course'){
+        document.getElementById('fCode').value = d.code||'';
+        document.getElementById('fContent').value = d.content||'';
+        document.getElementById('fRemark').value = d.remark||'';
+        formAdmin = d.admin||'';
+        setSelText('fAdmin', formAdmin||'请选择负责人');
+      } else {
+        document.getElementById('fRemark').value = d.remark||'';
+        formCollege = d.college||'';
+        setSelText('fCollege', formCollege||'请选择所属学院（部门）');
+        formDirector = d.director||'';
+        setSelText('fDirector', formDirector||'请选择教研室主任');
+      }
+    }
+    document.getElementById('formModal').classList.add('show');
+  }
+
+  function closeForm(){
+    document.getElementById('formModal').classList.remove('show');
+    editingId = -1;
+  }
+
+  function openSelect(target){
+    selectTarget = target;
+    var list, curVal, title;
+    if(target==='admin'){ list = adminList; curVal = formAdmin; title = '选择负责人'; }
+    else if(target==='director'){ list = adminList; curVal = formDirector; title = '选择教研室主任'; }
+    else { list = collegeList; curVal = formCollege; title = '选择所属学院（部门）'; }
+    document.getElementById('selectTitle').textContent = title;
+    var listEl = document.getElementById('selectList');
+    listEl.innerHTML = list.map(function(item){
+      return '<div class="dept-item' + (item===curVal?' selected':'') + '" onclick="pickSelect(\''+item+'\')">'+item+'</div>';
+    }).join('');
+    document.getElementById('selectModal').classList.add('show');
+  }
+  function closeSelect(){ document.getElementById('selectModal').classList.remove('show'); }
+  function pickSelect(val){
+    if(selectTarget==='admin'){ formAdmin = val; setSelText('fAdmin', val); }
+    else if(selectTarget==='director'){ formDirector = val; setSelText('fDirector', val); }
+    else { formCollege = val; setSelText('fCollege', val); }
+    closeSelect();
+  }
+
+  function saveForm(){
+    var name = document.getElementById('fName').value.trim();
+    if(!name){ toast('请输入名称'); return; }
+
+    if(activeTab==='college'){
+      var code = document.getElementById('fCode').value.trim();
+      var address = document.getElementById('fAddress').value.trim();
+      var remark = document.getElementById('fRemark').value.trim();
+      if(editingId<0){
+        colleges.unshift({ id:Date.now(), name:name, code:code||genCode('college'), admin:formAdmin, address:address, remark:remark });
+        toast('学院已添加');
+      } else {
+        var d = colleges.find(function(x){ return x.id===editingId; });
+        if(d){ d.name=name; d.admin=formAdmin; d.address=address; d.remark=remark; toast('已保存'); }
+      }
+    } else if(activeTab==='course'){
+      var code = document.getElementById('fCode').value.trim();
+      var content = document.getElementById('fContent').value.trim();
+      var remark = document.getElementById('fRemark').value.trim();
+      if(editingId<0){
+        courses.unshift({ id:Date.now(), name:name, code:code||genCode('course'), content:content, admin:formAdmin, remark:remark });
+        toast('课程已添加');
+      } else {
+        var d = courses.find(function(x){ return x.id===editingId; });
+        if(d){ d.name=name; d.content=content; d.admin=formAdmin; d.remark=remark; toast('已保存'); }
+      }
+    } else {
+      if(!formCollege){ toast('请选择所属学院（部门）'); return; }
+      var remark = document.getElementById('fRemark').value.trim();
+      if(editingId<0){
+        depts.unshift({ id:Date.now(), college:formCollege, name:name, director:formDirector, remark:remark });
+        toast('教研室已添加');
+      } else {
+        var d = depts.find(function(x){ return x.id===editingId; });
+        if(d){ d.college=formCollege; d.name=name; d.director=formDirector; d.remark=remark; toast('已保存'); }
+      }
+    }
+    closeForm();
+    doSearch();
+  }
+
+  function editItem(id){ openForm(id); }
+  function delItem(id){
+    pendingDelId = id;
+    var data = getData();
+    var d = data.find(function(x){ return x.id===id; });
+    document.getElementById('confirmMsg').textContent = '删除「' + (d?d.name:'') + '」后不可恢复，是否继续？';
+    document.getElementById('confirmDel').classList.add('show');
+  }
+  function closeConfirm(){ document.getElementById('confirmDel').classList.remove('show'); pendingDelId = -1; }
+  function confirmDelete(){
+    if(pendingDelId<0) return;
+    var data = getData();
+    var idx = data.findIndex(function(x){ return x.id===pendingDelId; });
+    if(idx>-1){
+      var d = data.splice(idx,1)[0];
+      toast('已删除：' + d.name);
+      doSearch();
+    }
+    closeConfirm();
+  }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+
+  render(colleges);
+
+  // 处理从详情页返回的编辑请求
+  (function(){
+    var params = new URLSearchParams(window.location.search);
+    var editType = params.get('editType') || '';
+    var editId = parseInt(params.get('editId')) || -1;
+    if(editType && editId >= 0){
+      history.replaceState({}, '', 'basic-management.html');
+      switchTab(editType);
+      setTimeout(function(){ openForm(editId); }, 100);
+    }
+  })();
+</script>
+</body>
+</html>

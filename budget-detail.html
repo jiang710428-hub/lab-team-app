@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>预算详情</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f1f4fa; color: #1f2329; }
+  .phone { position: relative; width: 375px; height: 812px; margin: 20px auto; background: #f1f4fa; border-radius: 30px; box-shadow: 0 6px 24px rgba(0,0,0,.12); overflow: hidden; }
+  .statusbar { height: 44px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #1f2329; background: #f1f4fa; }
+  .statusbar .right { display: flex; align-items: center; gap: 6px; }
+  .navbar { height: 44px; display: flex; align-items: center; position: relative; background: #f1f4fa; padding: 0 12px; }
+  .navbar .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+  .navbar .title { flex: 1; font-size: 17px; font-weight: 600; color: #1f2329; text-align: center; margin-right: 32px; }
+  .content { padding: 0 14px 120px; overflow-y: auto; height: calc(100% - 44px - 44px); }
+
+  .header-card { background: #fff; border-radius: 14px; padding: 18px 16px; margin-bottom: 10px; }
+  .header-name { font-size: 18px; font-weight: 700; color: #1f2329; margin-bottom: 8px; }
+  .header-amount { font-size: 24px; font-weight: 700; color: #07c160; margin-bottom: 8px; }
+  .header-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 3px 10px; border-radius: 6px; font-weight: 600; }
+  .header-status.pending { background: #fff8e1; color: #f9a825; }
+  .header-status.approved { background: #e6f7ef; color: #07c160; }
+  .header-status.rejected { background: #ffeaea; color: #e53935; }
+  .header-status.revoked { background: #f3f4f6; color: #8a8f99; }
+  .header-status .s-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .header-status.pending .s-dot { background: #f9a825; }
+  .header-status.approved .s-dot { background: #07c160; }
+  .header-status.rejected .s-dot { background: #e53935; }
+  .header-status.revoked .s-dot { background: #8a8f99; }
+
+  .section { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+  .section-title { font-size: 13px; color: #8a8f99; font-weight: 500; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .section-title::before { content: ''; width: 3px; height: 14px; background: #07c160; border-radius: 2px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+  .info-item .lbl { font-size: 12px; color: #8a8f99; margin-bottom: 3px; }
+  .info-item .val { font-size: 15px; font-weight: 600; color: #1f2329; word-break: break-all; }
+  .info-full { margin-top: 4px; }
+  .info-full .lbl { font-size: 12px; color: #8a8f99; margin-bottom: 3px; }
+  .info-full .val { font-size: 14px; color: #1f2329; line-height: 1.6; word-break: break-all; }
+
+  /* 审批流时间线 */
+  .timeline { position: relative; padding-left: 36px; }
+  .timeline::before { content: ''; position: absolute; left: 14px; top: 8px; bottom: 8px; width: 2px; background: #e5e7eb; }
+  .timeline-item { position: relative; padding-bottom: 20px; }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-avatar { position: absolute; left: -36px; top: 0; width: 28px; height: 28px; border-radius: 50%; background: #2f7bff; color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 600; z-index: 1; }
+  .timeline-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .timeline-badge { position: absolute; left: -22px; bottom: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; z-index: 2; display: flex; align-items: center; justify-content: center; }
+  .timeline-badge svg { width: 14px; height: 14px; }
+  .timeline-badge.approved { color: #07c160; }
+  .timeline-badge.rejected { color: #e53935; }
+  .timeline-badge.pending { color: #f9a825; }
+  .timeline-title { font-size: 14px; font-weight: 600; color: #1f2329; margin-bottom: 2px; }
+  .timeline-name { font-size: 13px; color: #4a4f57; margin-bottom: 4px; }
+  .timeline-remark { font-size: 12px; color: #8a8f99; background: #f6f7f9; border-radius: 6px; padding: 6px 10px; margin-bottom: 4px; }
+  .timeline-time { font-size: 11px; color: #aab0bb; }
+
+  .bottom-bar { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px 14px 28px; display: flex; gap: 10px; background: linear-gradient(180deg, transparent 0%, #f1f4fa 20%, #f1f4fa 100%); }
+  .btn { flex: 1; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn:active { transform: scale(.97); }
+  .btn.back { background: #f3f4f6; color: #4a4f57; }
+  .btn.approve { background: #07c160; color: #fff; }
+  .btn.reject { background: #fff; color: #e53935; border: 1px solid #e53935; }
+  .btn.revoke { background: #fff; color: #8a8f99; border: 1px solid #d0d4dc; }
+
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .modal { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 10px 0 28px; animation: slideUp .25s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 14px; }
+  .modal h4 { font-size: 16px; text-align: center; margin-bottom: 14px; color: #1f2329; }
+  .form-item { padding: 0 16px; margin-bottom: 14px; }
+  .form-item .lbl { font-size: 13px; color: #4a4f57; margin-bottom: 6px; }
+  .form-item .lbl .req { color: #ff3b30; }
+  .form-item textarea { width: 100%; height: 90px; background: #f6f7f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 12px; font-size: 14px; color: #1f2329; outline: 0; resize: none; }
+  .form-actions { display: flex; gap: 10px; padding: 0 16px; }
+
+  .confirm-mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 60; display: none; align-items: center; justify-content: center; padding: 0 40px; }
+  .confirm-mask.show { display: flex; }
+  .confirm-box { width: 100%; max-width: 280px; background: #fff; border-radius: 14px; overflow: hidden; animation: pop .2s ease; }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .confirm-title { font-size: 16px; font-weight: 600; text-align: center; padding: 22px 20px 8px; color: #1f2329; }
+  .confirm-msg { font-size: 14px; text-align: center; padding: 0 20px 20px; color: #8a8f99; line-height: 1.5; }
+  .confirm-btns { display: flex; border-top: 1px solid #eef0f4; }
+  .confirm-btns .cb { flex: 1; height: 46px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+  .confirm-btns .cb.cancel { color: #4a4f57; border-right: 1px solid #eef0f4; }
+  .confirm-btns .cb.ok { color: #e53935; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar">
+    <span>12:00</span>
+    <span class="right">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22l4-12 4 12H2zm10 0V8l8 14h-8z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.5 3 3.7 5.7 2 9.5L12 22l10-12.5C20.3 5.7 16.5 3 12 3z"/></svg>
+      <svg width="22" height="12" viewBox="0 0 22 12"><rect x="0" y="1" width="18" height="10" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="3" width="14" height="6" rx="1" fill="currentColor"/><rect x="20" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <div class="navbar">
+    <div class="back" onclick="goBack()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f2329" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">预算详情</div>
+  </div>
+
+  <div class="content" id="detailContent"></div>
+
+  <div class="bottom-bar" id="bottomBar">
+    <div class="btn back" onclick="goBack()">返回列表</div>
+  </div>
+
+  <!-- 审核备注弹窗 -->
+  <div class="mask" id="auditModal" onclick="if(event.target===this)closeAuditModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-bar"></div>
+      <h4 id="auditTitle">审核</h4>
+      <div class="form-item">
+        <div class="lbl"><span class="req">*</span> 审核备注</div>
+        <textarea id="auditRemark" placeholder="请输入审核备注"></textarea>
+      </div>
+      <div class="form-actions">
+        <div class="btn back" onclick="closeAuditModal()">取消</div>
+        <div class="btn primary" id="auditConfirmBtn" onclick="submitAudit()">提交</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 撤销确认 -->
+  <div class="confirm-mask" id="confirmRevoke" onclick="if(event.target===this)closeRevokeConfirm()">
+    <div class="confirm-box">
+      <div class="confirm-title">确认撤销</div>
+      <div class="confirm-msg">撤销后将终止该预算审批流程，是否继续？</div>
+      <div class="confirm-btns">
+        <div class="cb cancel" onclick="closeRevokeConfirm()">取消</div>
+        <div class="cb ok" onclick="confirmRevoke()">撤销</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  var currentUser = '张三';
+  var budgets = [];
+  var budgetId = -1;
+  var auditType = '';
+
+  var defaultBudgets = [
+    { id:1, name:'高性能离心机', spec:'最高转速15000rpm', unit:'台', quantity:2, price:12000, total:24000, applyCode:'YS-2025-0001', college:'临床学院', dept:'内科教研室', remark:'用于血液样本分离', applicant:'张三', status:'pending', createTime:'2025-07-10 09:30', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-10 10:00', remark:'同意' },
+      { name:'李教授', role:'审批人', status:'pending', time:'', remark:'' }
+    ]},
+    { id:2, name:'荧光定量PCR仪', spec:'96孔实时荧光', unit:'台', quantity:1, price:48000, total:48000, applyCode:'YS-2025-0002', college:'基础医学院', dept:'解剖学教研室', remark:'用于基因表达定量分析', applicant:'李四', status:'pending', createTime:'2025-07-14 09:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-14 10:00', remark:'同意' },
+      { name:'张三', role:'审批人', status:'pending', time:'', remark:'' }
+    ]},
+    { id:3, name:'显微镜', spec:'双目生物显微镜', unit:'台', quantity:5, price:8000, total:40000, applyCode:'YS-2025-0003', college:'药学院', dept:'药物分析教研室', remark:'用于药物晶型观察', applicant:'张三', status:'approved', createTime:'2025-07-09 11:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-09 12:00', remark:'同意采购' },
+      { name:'李教授', role:'审批人', status:'approved', time:'2025-07-09 15:30', remark:'同意' }
+    ]},
+    { id:4, name:'超低温冰箱', spec:'-80℃立式', unit:'台', quantity:2, price:28000, total:56000, applyCode:'YS-2025-0004', college:'临床学院', dept:'内科教研室', remark:'用于生物样本长期保存', applicant:'王五', status:'rejected', createTime:'2025-07-12 08:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-12 09:30', remark:'同意' },
+      { name:'赵教授', role:'审批人', status:'rejected', time:'2025-07-12 14:00', remark:'预算超标，建议压缩数量后再提交' }
+    ]},
+    { id:5, name:'电子天平', spec:'0.1mg精度', unit:'台', quantity:3, price:15000, total:45000, applyCode:'YS-2025-0005', college:'药学院', dept:'药物分析教研室', remark:'用于精密称量实验', applicant:'张三', status:'revoked', createTime:'2025-07-08 10:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-08 11:00', remark:'同意' },
+      { name:'李教授', role:'审批人', status:'pending', time:'', remark:'' }
+    ]}
+  ];
+
+  var tabFrom = 'all';
+
+  function init(){
+    var params = new URLSearchParams(window.location.search);
+    budgetId = parseInt(params.get('id')) || -1;
+    tabFrom = params.get('tab') || 'all';
+    if(budgetId < 0){ toast('参数错误'); return; }
+
+    var stored = sessionStorage.getItem('budgetData');
+    if(stored){
+      try { budgets = JSON.parse(stored); } catch(e){}
+    }
+    if(!budgets.length) budgets = defaultBudgets;
+
+    var b = budgets.find(function(x){ return x.id === budgetId; });
+    if(!b){ toast('未找到该预算'); return; }
+    renderDetail(b);
+  }
+
+  function renderDetail(b){
+    var statusText = b.status === 'approved' ? '已通过' : b.status === 'rejected' ? '不通过' : b.status === 'revoked' ? '已撤销' : '待审核';
+    var statusClass = b.status || 'pending';
+
+    document.getElementById('detailContent').innerHTML = ''
+      + '<div class="header-card">'
+      +   '<div class="header-name">' + b.name + '</div>'
+      +   '<div style="font-size:12px;color:#8a8f99;margin-bottom:6px;">申请编号：' + (b.applyCode||'—') + '</div>'
+      +   '<div class="header-amount">¥' + b.total.toLocaleString() + '</div>'
+      +   '<span class="header-status ' + statusClass + '"><span class="s-dot"></span>' + statusText + '</span>'
+      + '</div>'
+      + '<div class="section">'
+      +   '<div class="section-title">基本信息</div>'
+      +   '<div class="info-grid">'
+      +     '<div class="info-item"><div class="lbl">品名</div><div class="val">' + b.name + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">规格</div><div class="val">' + (b.spec||'—') + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">单位</div><div class="val">' + (b.unit||'—') + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">数量</div><div class="val">' + b.quantity + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">单价</div><div class="val">¥' + b.price.toLocaleString() + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">合计金额</div><div class="val">¥' + b.total.toLocaleString() + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">所属学院</div><div class="val">' + (b.college||'—') + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">教研室</div><div class="val">' + (b.dept||'—') + '</div></div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="section">'
+      +   '<div class="section-title">申请信息</div>'
+      +   '<div class="info-grid">'
+      +     '<div class="info-item"><div class="lbl">申请人</div><div class="val">' + (b.applicant||'—') + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">申请时间</div><div class="val">' + (b.createTime||'—') + '</div></div>'
+      +   '</div>'
+      +   '<div class="info-full" style="margin-top:10px;"><div class="lbl">申请备注</div><div class="val">' + (b.remark||'暂无备注') + '</div></div>'
+      + '</div>'
+      + '<div class="section">'
+      +   '<div class="section-title">审批流程</div>'
+      +   renderTimeline(b.approvers)
+      + '</div>';
+
+    // 底部按钮
+    var bottom = document.getElementById('bottomBar');
+    bottom.innerHTML = '';
+    if(b.status === 'pending' && b.applicant === currentUser){
+      bottom.innerHTML += '<div class="btn revoke" onclick="revokeBudget()" style="flex:none;width:100%;">撤销申请</div>';
+    }
+    var myApprover = b.approvers.find(function(a){ return a.name === currentUser && a.status === 'pending'; });
+    if(myApprover && b.status === 'pending'){
+      bottom.innerHTML = '<div class="btn reject" onclick="openAudit(\'reject\')">拒绝</div><div class="btn approve" onclick="openAudit(\'approve\')">同意</div>';
+    }
+    if(!bottom.innerHTML.trim()){
+      bottom.style.display = 'none';
+    } else {
+      bottom.style.display = 'flex';
+    }
+  }
+
+  function renderTimeline(approvers){
+    if(!approvers || !approvers.length) return '<div style="color:#8a8f99;font-size:13px;">暂无审批记录</div>';
+    return '<div class="timeline">' + approvers.map(function(a){
+      var statusText = a.status === 'approved' ? '已同意' : a.status === 'rejected' ? '已拒绝' : '待审批';
+      var badgeColor = a.status === 'approved' ? '#07c160' : a.status === 'rejected' ? '#e53935' : '#f9a825';
+      var icon = a.status === 'approved'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>'
+        : a.status === 'rejected'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M6 18L18 6"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg>';
+      return '<div class="timeline-item">'
+        + '<div class="timeline-avatar">' + a.name.charAt(0) + '</div>'
+        + '<div class="timeline-badge ' + a.status + '">' + icon + '</div>'
+        + '<div class="timeline-title">' + (a.role||'审批人') + '</div>'
+        + '<div class="timeline-name">' + a.name + ' (' + statusText + ')</div>'
+        + (a.remark ? '<div class="timeline-remark">' + a.remark + '</div>' : '')
+        + (a.time ? '<div class="timeline-time">' + a.time + '</div>' : '')
+        + '</div>';
+    }).join('') + '</div>';
+  }
+
+  function openAudit(type){
+    auditType = type;
+    document.getElementById('auditTitle').textContent = type === 'approve' ? '同意审批' : '拒绝审批';
+    document.getElementById('auditRemark').value = '';
+    document.getElementById('auditConfirmBtn').className = type === 'approve' ? 'btn approve' : 'btn reject';
+    document.getElementById('auditConfirmBtn').textContent = type === 'approve' ? '确认同意' : '确认拒绝';
+    document.getElementById('auditModal').classList.add('show');
+  }
+  function closeAuditModal(){ document.getElementById('auditModal').classList.remove('show'); auditType = ''; }
+
+  function submitAudit(){
+    var remark = document.getElementById('auditRemark').value.trim();
+    if(!remark){ toast('请输入审核备注'); return; }
+
+    var b = budgets.find(function(x){ return x.id === budgetId; });
+    if(!b) return;
+
+    var approver = b.approvers.find(function(a){ return a.name === currentUser && a.status === 'pending'; });
+    if(!approver) return;
+
+    approver.status = auditType === 'approve' ? 'approved' : 'rejected';
+    approver.remark = remark;
+    approver.time = formatNow();
+
+    if(auditType === 'rejected'){
+      b.status = 'rejected';
+    } else {
+      var allApproved = b.approvers.every(function(a){ return a.status === 'approved'; });
+      b.status = allApproved ? 'approved' : 'pending';
+    }
+
+    sessionStorage.setItem('budgetData', JSON.stringify(budgets));
+    toast(auditType === 'approve' ? '已同意' : '已拒绝');
+    closeAuditModal();
+    renderDetail(b);
+  }
+
+  function revokeBudget(){
+    document.getElementById('confirmRevoke').classList.add('show');
+  }
+  function closeRevokeConfirm(){ document.getElementById('confirmRevoke').classList.remove('show'); }
+  function confirmRevoke(){
+    var b = budgets.find(function(x){ return x.id === budgetId; });
+    if(b){ b.status = 'revoked'; sessionStorage.setItem('budgetData', JSON.stringify(budgets)); renderDetail(b); toast('已撤销'); }
+    closeRevokeConfirm();
+  }
+
+  function goBack(){
+    location.href = 'budget-management.html?tab=' + tabFrom;
+  }
+
+  function formatNow(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+
+  init();
+</script>
+</body>
+</html>

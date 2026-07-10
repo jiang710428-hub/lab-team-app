@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>实验室</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f1f4fa; color: #1f2329; }
+  .phone { position: relative; width: 375px; height: 812px; margin: 20px auto; background: #f1f4fa; border-radius: 30px; box-shadow: 0 6px 24px rgba(0,0,0,.12); overflow: hidden; }
+  .statusbar { height: 44px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #1f2329; background: #f1f4fa; }
+  .statusbar .right { display: flex; align-items: center; gap: 6px; }
+  .navbar { height: 44px; display: flex; align-items: center; position: relative; background: #f1f4fa; padding: 0 12px; }
+  .navbar .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+  .navbar .title { flex: 1; font-size: 17px; font-weight: 600; color: #1f2329; text-align: center; margin-right: 32px; }
+
+  .tabs { display: flex; align-items: center; padding: 0 14px; background: #f1f4fa; }
+  .tab { flex: 1; text-align: center; font-size: 15px; color: #8a8f99; padding: 10px 0; position: relative; cursor: pointer; font-weight: 500; }
+  .tab.active { color: #1f2329; font-weight: 600; }
+  .tab.active::after { content: ''; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 28px; height: 3px; background: #2f7bff; border-radius: 2px; }
+
+  .search-wrap { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: #f1f4fa; }
+  .search { flex: 1; display: flex; align-items: center; gap: 6px; height: 38px; background: #fff; border-radius: 10px; padding: 0 10px; }
+  .search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; color: #1f2329; }
+  .search input::placeholder { color: #aab0bb; }
+  .filter { display: flex; align-items: center; gap: 4px; font-size: 14px; color: #1f2329; cursor: pointer; flex-shrink: 0; }
+  .filter svg { color: #1f2329; }
+
+  .list { padding: 0 14px 100px; overflow-y: auto; height: calc(100% - 44px - 44px - 44px - 54px); }
+  .card { display: flex; gap: 12px; background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; transition: transform .1s; -webkit-tap-highlight-color: transparent; }
+  .card:active { background: #f8f9fb; }
+  .card-img { width: 72px; height: 72px; border-radius: 10px; background: #eef0f4; flex-shrink: 0; overflow: hidden; }
+  .card-img img { width: 100%; height: 100%; object-fit: cover; }
+  .card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+  .card-title { font-size: 15px; font-weight: 600; color: #1f2329; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8a8f99; margin-top: 4px; }
+  .card-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: #d0d4dc; }
+  .card-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .card-status { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 500; }
+  .card-status .s-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .card-status.enabled { color: #07c160; }
+  .card-status.enabled .s-dot { background: #07c160; }
+  .card-status.disabled { color: #8a8f99; }
+  .card-status.disabled .s-dot { background: #8a8f99; }
+  .card-workstation { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #8a8f99; }
+  .more-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #8a8f99; }
+  .more-btn:active { color: #2f7bff; }
+
+  .fab { position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; background: #2f7bff; color: #fff; height: 46px; width: 220px; border-radius: 23px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 16px rgba(47,123,255,.35); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s; }
+  .fab:active { transform: translateX(-50%) scale(.96); }
+
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+
+  /* Mask & Sheet */
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .sheet { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 10px 0 28px; animation: slideUp .25s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 14px; }
+  .sheet-item { height: 50px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #1f2329; cursor: pointer; border-bottom: 1px solid #f5f6f8; }
+  .sheet-item:last-child { border-bottom: 0; }
+  .sheet-item:active { background: #f5f6f8; }
+  .sheet-item.danger { color: #e53935; }
+  .sheet-cancel { margin-top: 8px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #8a8f99; cursor: pointer; border-top: 6px solid #f1f4fa; }
+  .sheet-cancel:active { background: #f5f6f8; }
+
+  .filter-chip { display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 8px; font-size: 13px; background: #f3f4f6; color: #4a4f57; cursor: pointer; }
+  .filter-chip.active { background: #e8f0ff; color: #2f7bff; font-weight: 600; }
+
+  /* Form modal */
+  .form-modal { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 10px 0 28px; animation: slideUp .25s ease; max-height: 92%; overflow-y: auto; }
+  .form-modal .modal-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 14px; }
+  .form-modal h4 { font-size: 16px; text-align: center; margin-bottom: 14px; color: #1f2329; }
+  .form-body { padding: 0 16px; }
+  .form-item { margin-bottom: 14px; }
+  .form-item .lbl { font-size: 13px; color: #4a4f57; margin-bottom: 6px; }
+  .form-item .lbl .req { color: #ff3b30; }
+  .form-item .ipt { width: 100%; height: 40px; background: #f6f7f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; font-size: 14px; color: #1f2329; outline: 0; }
+  .form-item .ipt:focus { border-color: #2f7bff; background: #fff; }
+  .form-item .ipt[disabled] { color: #aab0bb; background: #f0f1f3; }
+  .form-item textarea.ipt { height: 76px; padding: 8px 12px; resize: none; }
+  .form-item .ipt-sel { width: 100%; height: 40px; background: #f6f7f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; font-size: 14px; color: #1f2329; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .form-item .ipt-sel:active { background: #eee; }
+  .form-item .ipt-sel .placeholder { color: #aab0bb; }
+
+  .img-upload { width: 100px; height: 100px; border-radius: 12px; background: #f6f7f9; border: 1.5px dashed #d0d4dc; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; }
+  .img-upload img { width: 100%; height: 100%; object-fit: cover; }
+  .img-upload .placeholder { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #aab0bb; font-size: 12px; }
+  .img-upload .change-tip { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.55); color: #fff; font-size: 11px; text-align: center; padding: 4px 0; display: none; }
+  .img-upload.has-img .change-tip { display: block; }
+  .img-upload.has-img .placeholder { display: none; }
+
+  .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .btn { flex: 1; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .btn.cancel { background: #f3f4f6; color: #4a4f57; }
+  .btn.primary { background: #2f7bff; color: #fff; }
+  .btn:active { transform: scale(.97); }
+  .btn.confirm { width: 100%; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; background: #2f7bff; color: #fff; cursor: pointer; }
+  .btn.confirm:active { transform: scale(.98); }
+
+  .dept-list { max-height: 260px; overflow-y: auto; }
+  .dept-item { height: 44px; display: flex; align-items: center; padding: 0 16px; font-size: 14px; color: #1f2329; cursor: pointer; border-bottom: 1px solid #f0f2f5; }
+  .dept-item:active { background: #f6f7f9; }
+  .dept-item.selected { color: #2f7bff; font-weight: 600; }
+  .dept-item.selected::after { content: '✓'; margin-left: auto; color: #2f7bff; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="statusbar">
+    <span>12:00</span>
+    <span class="right">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22l4-12 4 12H2zm10 0V8l8 14h-8z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.5 3 3.7 5.7 2 9.5L12 22l10-12.5C20.3 5.7 16.5 3 12 3z"/></svg>
+      <svg width="22" height="12" viewBox="0 0 22 12"><rect x="0" y="1" width="18" height="10" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="3" width="14" height="6" rx="1" fill="currentColor"/><rect x="20" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <div class="navbar">
+    <div class="back" onclick="location.href='home.html'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f2329" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">实验室</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabList" onclick="switchTab('list')">实验室列表</div>
+    <div class="tab" id="tabRecord" onclick="switchTab('record')">使用记录</div>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="请搜索实验室名称/编号" oninput="doSearch()" />
+    </div>
+    <div class="filter" onclick="openFilter()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="6" y1="18" x2="18" y2="18"/></svg>
+      <span>筛选</span>
+    </div>
+  </div>
+
+  <div class="list" id="labList"></div>
+
+  <div class="fab" onclick="openForm(-1)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    创建实验室
+  </div>
+
+  <!-- 操作菜单 -->
+  <div class="mask" id="actionSheet" onclick="if(event.target===this)closeSheet()">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-bar"></div>
+      <div class="sheet-item" id="toggleItem" onclick="toggleStatus()">查看详情</div>
+      <div class="sheet-item" onclick="openForm(activeId)">编辑</div>
+      <div class="sheet-item danger" onclick="deleteLab()">删除</div>
+      <div class="sheet-cancel" onclick="closeSheet()">取消</div>
+    </div>
+  </div>
+
+  <!-- 筛选弹窗 -->
+  <div class="mask" id="filterSheet" onclick="if(event.target===this)closeFilter()">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-bar"></div>
+      <div style="font-size:16px;font-weight:600;text-align:center;margin-bottom:14px;">筛选</div>
+      <div style="padding:0 16px;">
+        <div style="font-size:13px;color:#8a8f99;margin-bottom:8px;">状态</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <div class="filter-chip active" data-key="status" data-val="all" onclick="pickFilter(this,'status','all')">全部</div>
+          <div class="filter-chip" data-key="status" data-val="enabled" onclick="pickFilter(this,'status','enabled')">启用</div>
+          <div class="filter-chip" data-key="status" data-val="disabled" onclick="pickFilter(this,'status','disabled')">禁用</div>
+        </div>
+        <div style="font-size:13px;color:#8a8f99;margin-bottom:8px;">所属学院（部门）</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;" id="collegeChips"></div>
+        <div class="btn confirm" onclick="applyFilter()" style="margin-top:6px;">确定</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 表单弹窗 -->
+  <div class="mask" id="formSheet" onclick="if(event.target===this)closeForm()">
+    <div class="form-modal" onclick="event.stopPropagation()">
+      <div class="modal-bar"></div>
+      <h4 id="formTitle">创建实验室</h4>
+      <div class="form-body">
+        <div class="form-item">
+          <div class="lbl"><span class="req">*</span> 实验室图片</div>
+          <div class="img-upload" id="imgUpload" onclick="triggerUpload()">
+            <div class="placeholder">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="2"/><path d="M2 14l5-5 4 4 3-3 8 8"/></svg>
+              <span>点击上传</span>
+            </div>
+            <img id="imgPreview" src="" alt="" style="display:none;" />
+            <div class="change-tip">点击修改</div>
+          </div>
+          <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleFile(event)" />
+        </div>
+        <div class="form-item">
+          <div class="lbl"><span class="req">*</span> 实验室名称</div>
+          <input class="ipt" id="fName" placeholder="请输入实验室名称" />
+        </div>
+        <div class="form-item">
+          <div class="lbl">实验室编号</div>
+          <input class="ipt" id="fCode" disabled placeholder="系统自动生成" />
+        </div>
+        <div class="form-item">
+          <div class="lbl">实验室类型</div>
+          <input class="ipt" id="fType" placeholder="请输入实验室类型，如：虚拟仿真实训室" />
+        </div>
+        <div class="form-item">
+          <div class="lbl">管理员</div>
+          <div class="ipt-sel" id="fAdmin" onclick="openSelect('admin')">
+            <span class="placeholder">请选择管理员</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+        <div class="form-item">
+          <div class="lbl"><span class="req">*</span> 所属学院（部门）</div>
+          <div class="ipt-sel" id="fCollege" onclick="openSelect('college')">
+            <span class="placeholder">请选择所属学院（部门）</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+        <div class="form-item">
+          <div class="lbl"><span class="req">*</span> 位置</div>
+          <input class="ipt" id="fLocation" placeholder="如：科研楼A座302室" />
+        </div>
+        <div class="form-item">
+          <div class="lbl"><span class="req">*</span> 工位数</div>
+          <input class="ipt" id="fWorkstation" type="number" placeholder="请输入工位数" />
+        </div>
+        <div class="form-item">
+          <div class="lbl">说明</div>
+          <textarea class="ipt" id="fDesc" placeholder="请输入实验室说明"></textarea>
+        </div>
+        <div class="form-actions">
+          <div class="btn cancel" onclick="closeForm()">取消</div>
+          <div class="btn primary" onclick="saveForm()">保存</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 选择器弹窗 -->
+  <div class="mask" id="selectSheet" onclick="if(event.target===this)closeSelect()">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-bar"></div>
+      <h4 id="selectTitle">请选择</h4>
+      <div class="dept-list" id="selectList"></div>
+      <div class="form-actions" style="padding:12px 16px 0;">
+        <div class="btn cancel" onclick="closeSelect()">取消</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  var labs = [
+    { id:1, name:'多通道沉浸式CAVE虚实结合智能实训室', code:'LAB-2024-001', type:'虚拟仿真实训室', admin:'张教授', college:'临床学院', location:'科研楼A座302室', workstation:60, description:'沉浸式CAVE虚拟仿真系统，支持多通道投影与虚实结合训练。', status:'enabled', img:'https://placehold.co/200x200/e8f0ff/2f7bff?text=CAVE' },
+    { id:2, name:'综合置管虚实结合智能实训室', code:'LAB-2024-002', type:'技能实训室', admin:'李教授', college:'药学院', location:'药学楼B座105室', workstation:45, description:'综合置管技能训练与虚拟仿真结合，覆盖多种置管操作场景。', status:'disabled', img:'https://placehold.co/200x200/fff3e0/ff8a00?text=置管' },
+    { id:3, name:'公共虚拟仿真实训中心', code:'LAB-2024-003', type:'虚拟仿真实训室', admin:'王教授', college:'基础医学院', location:'医学楼C座208室', workstation:80, description:'公共虚拟仿真实训平台，支持多专业共享使用。', status:'enabled', img:'https://placehold.co/200x200/e6f7ef/07c160?text=VR' },
+    { id:4, name:'超级仿真临床综合诊疗技能实训室', code:'LAB-2024-004', type:'综合实训室', admin:'赵教授', college:'公共卫生学院', location:'公卫楼D座401室', workstation:32, description:'超级仿真模拟人结合综合诊疗技能训练系统。', status:'disabled', img:'https://placehold.co/200x200/f3e8ff/9b8cff?text=仿真' },
+    { id:5, name:'模拟ICU综合急救诊疗技能实训室', code:'LAB-2024-005', type:'急救实训室', admin:'陈教授', college:'临床学院', location:'科研楼A座501室', workstation:55, description:'模拟ICU场景，开展综合急救与诊疗技能训练。', status:'enabled', img:'https://placehold.co/200x200/ffeaea/e53935?text=ICU' },
+    { id:6, name:'外科基本技能实训室', code:'LAB-2024-006', type:'外科实训室', admin:'周教授', college:'药学院', location:'药学楼B座202室', workstation:70, description:'外科基本操作技能训练，配备标准化手术器械与模拟人。', status:'enabled', img:'https://placehold.co/200x200/e8f4ff/2f7bff?text=外科' }
+  ];
+
+  var colleges = ['临床学院','药学院','基础医学院','公共卫生学院','护理学院','口腔医学院'];
+  var adminList = ['张教授','李教授','王教授','赵教授','陈教授','周教授','刘教授','孙教授','杨教授','马教授'];
+  var defaultImg = 'https://placehold.co/200x200/e8f0ff/2f7bff?text=LAB';
+
+  var currentList = labs.slice();
+  var activeTab = 'list';
+  var activeId = -1;
+  var editingId = -1;
+  var filterStatus = 'all';
+  var filterCollege = 'all';
+  var nextCode = 7;
+
+  // 表单临时数据
+  var formImg = '';
+  var formAdmin = '';
+  var formCollege = '';
+  var selectTarget = '';
+
+  function render(list){
+    var wrap = document.getElementById('labList');
+    if(!list.length){
+      wrap.innerHTML = '<div style="text-align:center;color:#8a8f99;padding:60px 0;font-size:14px;">暂无实验室</div>';
+      return;
+    }
+    wrap.innerHTML = list.map(function(l){
+      var statusText = l.status === 'enabled' ? '启用' : '禁用';
+      var statusClass = l.status === 'enabled' ? 'enabled' : 'disabled';
+      return '<div class="card" onclick="goDetail(' + l.id + ')">'
+        +   '<div class="card-img"><img src="' + (l.img || defaultImg) + '" alt=""/></div>'
+        +   '<div class="card-body">'
+        +     '<div class="card-title">' + l.name + '</div>'
+        +     '<div class="card-meta">'
+        +       '<span>' + (l.code || '—') + '</span>'
+        +       '<span class="dot"></span>'
+        +       '<span>' + (l.college || '—') + '</span>'
+        +     '</div>'
+        +     '<div class="card-row">'
+        +       '<div class="card-status ' + statusClass + '"><span class="s-dot"></span>' + statusText + '</div>'
+        +       '<div class="card-workstation">'
+        +         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8f99" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M6 17v3h12v-3M9 21h6"/></svg>'
+        +         '<span>' + (l.workstation || '0') + '个工位</span>'
+        +       '</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="more-btn" onclick="event.stopPropagation();openSheet(' + l.id + ')">'
+        +     '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="18" r="2"/></svg>'
+        +   '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function doSearch(){
+    var kw = document.getElementById('searchInput').value.trim().toLowerCase();
+    currentList = labs.filter(function(l){
+      var matchKw = true;
+      if(kw){
+        matchKw = (l.name || '').toLowerCase().indexOf(kw) > -1
+               || (l.code || '').toLowerCase().indexOf(kw) > -1;
+      }
+      var matchStatus = filterStatus === 'all' || l.status === filterStatus;
+      var matchCollege = filterCollege === 'all' || l.college === filterCollege;
+      return matchKw && matchStatus && matchCollege;
+    });
+    render(currentList);
+  }
+
+  function switchTab(tab){
+    activeTab = tab;
+    document.getElementById('tabList').classList.toggle('active', tab === 'list');
+    document.getElementById('tabRecord').classList.toggle('active', tab === 'record');
+    if(tab === 'record'){
+      document.getElementById('labList').innerHTML = '<div style="text-align:center;color:#8a8f99;padding:60px 0;font-size:14px;">使用记录功能待开发</div>';
+    } else {
+      doSearch();
+    }
+  }
+
+  // ========== 筛选 ==========
+  function openFilter(){
+    var chipsEl = document.getElementById('collegeChips');
+    chipsEl.innerHTML = '<div class="filter-chip' + (filterCollege === 'all' ? ' active' : '') + '" data-key="college" data-val="all" onclick="pickFilter(this,\'college\',\'all\')">全部</div>'
+      + colleges.map(function(c){
+        return '<div class="filter-chip' + (filterCollege === c ? ' active' : '') + '" data-key="college" data-val="' + c + '" onclick="pickFilter(this,\'college\',\'' + c + '\')">' + c + '</div>';
+      }).join('');
+    document.querySelectorAll('#filterSheet .filter-chip[data-key="status"]').forEach(function(el){
+      el.classList.toggle('active', el.dataset.val === filterStatus);
+    });
+    document.getElementById('filterSheet').classList.add('show');
+  }
+  function closeFilter(){ document.getElementById('filterSheet').classList.remove('show'); }
+  function pickFilter(el, key, val){
+    var siblings = el.parentElement.querySelectorAll('.filter-chip');
+    siblings.forEach(function(s){ s.classList.remove('active'); });
+    el.classList.add('active');
+    if(key === 'status') filterStatus = val;
+    if(key === 'college') filterCollege = val;
+  }
+  function applyFilter(){ closeFilter(); doSearch(); }
+
+  // ========== 表单 ==========
+  function genCode(){
+    var num = nextCode++;
+    return 'LAB-' + new Date().getFullYear() + '-' + String(num).padStart(3, '0');
+  }
+
+  function resetForm(){
+    formImg = '';
+    formAdmin = '';
+    formCollege = '';
+    var upload = document.getElementById('imgUpload');
+    var preview = document.getElementById('imgPreview');
+    preview.style.display = 'none';
+    preview.src = '';
+    upload.classList.remove('has-img');
+    document.getElementById('fName').value = '';
+    document.getElementById('fCode').value = '';
+    document.getElementById('fType').value = '';
+    document.getElementById('fLocation').value = '';
+    document.getElementById('fWorkstation').value = '';
+    document.getElementById('fDesc').value = '';
+    setSelText('fAdmin', '请选择管理员');
+    setSelText('fCollege', '请选择所属学院（部门）');
+  }
+
+  function setSelText(id, text){
+    var el = document.getElementById(id);
+    el.querySelector('span').textContent = text;
+    if(text.indexOf('请选择') === 0) el.querySelector('span').classList.add('placeholder');
+    else el.querySelector('span').classList.remove('placeholder');
+  }
+
+  function openForm(id){
+    editingId = id;
+    document.getElementById('formTitle').textContent = id < 0 ? '创建实验室' : '编辑实验室';
+    resetForm();
+    if(id < 0){
+      // 创建
+      document.getElementById('fCode').value = genCode();
+    } else {
+      var l = labs.find(function(x){ return x.id === id; });
+      if(!l) return;
+      document.getElementById('fName').value = l.name || '';
+      document.getElementById('fCode').value = l.code || '';
+      document.getElementById('fType').value = l.type || '';
+      document.getElementById('fLocation').value = l.location || '';
+      document.getElementById('fWorkstation').value = l.workstation || '';
+      document.getElementById('fDesc').value = l.description || '';
+      formAdmin = l.admin || '';
+      setSelText('fAdmin', formAdmin || '请选择管理员');
+      formCollege = l.college || '';
+      setSelText('fCollege', formCollege || '请选择所属学院（部门）');
+      if(l.img){
+        formImg = l.img;
+        var preview = document.getElementById('imgPreview');
+        preview.src = l.img;
+        preview.style.display = 'block';
+        document.getElementById('imgUpload').classList.add('has-img');
+      }
+    }
+    document.getElementById('formSheet').classList.add('show');
+  }
+
+  function closeForm(){
+    document.getElementById('formSheet').classList.remove('show');
+    editingId = -1;
+  }
+
+  function triggerUpload(){
+    document.getElementById('fileInput').click();
+  }
+
+  function handleFile(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      formImg = ev.target.result;
+      var preview = document.getElementById('imgPreview');
+      preview.src = formImg;
+      preview.style.display = 'block';
+      document.getElementById('imgUpload').classList.add('has-img');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function openSelect(target){
+    selectTarget = target;
+    var list, curVal, title;
+    if(target === 'admin'){
+      list = adminList; curVal = formAdmin; title = '选择管理员';
+    } else {
+      list = colleges; curVal = formCollege; title = '选择所属学院（部门）';
+    }
+    document.getElementById('selectTitle').textContent = title;
+    var listEl = document.getElementById('selectList');
+    listEl.innerHTML = list.map(function(item){
+      return '<div class="dept-item' + (item === curVal ? ' selected' : '') + '" onclick="pickSelect(\'' + item + '\')">' + item + '</div>';
+    }).join('');
+    document.getElementById('selectSheet').classList.add('show');
+  }
+  function closeSelect(){ document.getElementById('selectSheet').classList.remove('show'); }
+  function pickSelect(val){
+    if(selectTarget === 'admin'){
+      formAdmin = val;
+      setSelText('fAdmin', val);
+    } else {
+      formCollege = val;
+      setSelText('fCollege', val);
+    }
+    closeSelect();
+  }
+
+  function saveForm(){
+    var name = document.getElementById('fName').value.trim();
+    var code = document.getElementById('fCode').value.trim();
+    var type = document.getElementById('fType').value.trim();
+    var location = document.getElementById('fLocation').value.trim();
+    var wsStr = document.getElementById('fWorkstation').value.trim();
+    var desc = document.getElementById('fDesc').value.trim();
+
+    if(!name){ toast('请输入实验室名称'); return; }
+    if(!formImg){ toast('请上传实验室图片'); return; }
+    if(!formCollege){ toast('请选择所属学院（部门）'); return; }
+    if(!location){ toast('请输入位置'); return; }
+    if(!wsStr){ toast('请输入工位数'); return; }
+    var ws = parseInt(wsStr);
+    if(isNaN(ws) || ws <= 0){ toast('请输入有效的工位数'); return; }
+
+    if(editingId < 0){
+      // 创建
+      labs.unshift({
+        id: Date.now(), name: name, code: code || genCode(), type: type,
+        admin: formAdmin, college: formCollege, location: location, workstation: ws,
+        description: desc, status: 'enabled', img: formImg
+      });
+      toast('实验室创建成功');
+    } else {
+      // 编辑
+      var l = labs.find(function(x){ return x.id === editingId; });
+      if(l){
+        l.name = name; l.type = type; l.admin = formAdmin; l.college = formCollege;
+        l.location = location; l.workstation = ws; l.description = desc; l.img = formImg;
+        toast('已保存：' + name);
+      }
+    }
+    currentList = labs.slice();
+    sessionStorage.setItem('labData', JSON.stringify(labs));
+    render(currentList);
+    closeForm();
+  }
+
+  // ========== 操作菜单 ==========
+  function openSheet(id){
+    activeId = id;
+    var l = labs.find(function(x){ return x.id === id; });
+    if(l){
+      var toggleEl = document.getElementById('toggleItem');
+      toggleEl.textContent = l.status === 'enabled' ? '禁用' : '启用';
+    }
+    document.getElementById('actionSheet').classList.add('show');
+  }
+  function closeSheet(){
+    document.getElementById('actionSheet').classList.remove('show');
+    activeId = -1;
+  }
+  function toggleStatus(){
+    if(activeId < 0) return;
+    var l = labs.find(function(x){ return x.id === activeId; });
+    if(l){
+      l.status = l.status === 'enabled' ? 'disabled' : 'enabled';
+      currentList = labs.slice();
+      doSearch();
+      toast(l.status === 'enabled' ? '已启用：' + l.name : '已禁用：' + l.name);
+    }
+    closeSheet();
+  }
+  function goDetail(id){
+    location.href = 'lab-detail.html?id=' + id;
+  }
+  function deleteLab(){
+    if(activeId < 0) return;
+    var idx = labs.findIndex(function(x){ return x.id === activeId; });
+    if(idx > -1){
+      var l = labs.splice(idx, 1)[0];
+      currentList = labs.slice();
+      sessionStorage.setItem('labData', JSON.stringify(labs));
+      doSearch();
+      toast('已删除：' + l.name);
+    }
+    closeSheet();
+  }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+
+  render(currentList);
+  // 同步数据到 sessionStorage 供详情页使用
+  sessionStorage.setItem('labData', JSON.stringify(labs));
+
+  // 处理从详情页返回的编辑请求
+  (function(){
+    var params = new URLSearchParams(window.location.search);
+    var editId = parseInt(params.get('edit')) || -1;
+    if(editId >= 0){
+      history.replaceState({}, '', 'lab.html');
+      openForm(editId);
+    }
+  })();
+</script>
+</body>
+</html>

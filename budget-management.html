@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>预算管理</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f1f4fa; color: #1f2329; }
+  .phone { position: relative; width: 375px; height: 812px; margin: 20px auto; background: #f1f4fa; border-radius: 30px; box-shadow: 0 6px 24px rgba(0,0,0,.12); overflow: hidden; }
+  .statusbar { height: 44px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #1f2329; background: #f1f4fa; }
+  .statusbar .right { display: flex; align-items: center; gap: 6px; }
+  .navbar { height: 44px; display: flex; align-items: center; position: relative; background: #f1f4fa; padding: 0 12px; }
+  .navbar .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+  .navbar .title { flex: 1; font-size: 17px; font-weight: 600; color: #1f2329; text-align: center; margin-right: 32px; }
+  .tabs { display: flex; background: #f1f4fa; padding: 0 14px; }
+  .tab { flex: 1; text-align: center; font-size: 14px; color: #8a8f99; padding: 10px 0; position: relative; cursor: pointer; font-weight: 500; }
+  .tab.active { color: #07c160; font-weight: 600; }
+  .tab.active::after { content: ''; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 24px; height: 3px; background: #07c160; border-radius: 2px; }
+  .search-wrap { padding: 8px 14px 6px; background: #f1f4fa; }
+  .search { display: flex; align-items: center; gap: 6px; height: 36px; background: #fff; border-radius: 10px; padding: 0 10px; border: 1.5px solid #e5e7eb; }
+  .search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; color: #1f2329; }
+  .search input::placeholder { color: #aab0bb; }
+  .list { padding: 8px 14px 100px; overflow-y: auto; height: calc(100% - 44px - 44px - 44px - 50px); }
+  .card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; }
+  .card:active { background: #f8f9fb; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .card-title { font-size: 15px; font-weight: 600; color: #1f2329; }
+  .card-amount { font-size: 16px; font-weight: 700; color: #07c160; }
+  .card-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8a8f99; margin-bottom: 4px; }
+  .card-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: #d0d4dc; }
+  .card-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+  .card-status.pending { background: #fff8e1; color: #f9a825; }
+  .card-status.approved { background: #e6f7ef; color: #07c160; }
+  .card-status.rejected { background: #ffeaea; color: #e53935; }
+  .card-status.revoked { background: #f3f4f6; color: #8a8f99; }
+  .card-status .s-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .card-status.pending .s-dot { background: #f9a825; }
+  .card-status.approved .s-dot { background: #07c160; }
+  .card-status.rejected .s-dot { background: #e53935; }
+  .card-status.revoked .s-dot { background: #8a8f99; }
+  .card-status.approved .s-dot { background: #07c160; }
+  .card-status.rejected .s-dot { background: #e53935; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .card-applicant { font-size: 12px; color: #8a8f99; }
+  .card-remark { font-size: 12px; color: #8a8f99; flex: 1; padding-right: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fab { position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; background: #07c160; color: #fff; height: 46px; width: 200px; border-radius: 23px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 16px rgba(7,193,96,.35); cursor: pointer; }
+  .fab:active { transform: translateX(-50%) scale(.96); }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .modal { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 10px 0 28px; animation: slideUp .25s ease; max-height: 92%; overflow-y: auto; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 14px; }
+  .modal h4 { font-size: 16px; text-align: center; margin-bottom: 14px; color: #1f2329; }
+  .form-body { padding: 0 16px; }
+  .form-item { margin-bottom: 14px; }
+  .form-item .lbl { font-size: 13px; color: #4a4f57; margin-bottom: 6px; }
+  .form-item .lbl .req { color: #ff3b30; }
+  .form-item .ipt { width: 100%; height: 40px; background: #f6f7f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; font-size: 14px; color: #1f2329; outline: 0; }
+  .form-item .ipt:focus { border-color: #07c160; background: #fff; }
+  .form-item .ipt[disabled] { color: #aab0bb; background: #f0f1f3; }
+  .form-item textarea.ipt { height: 70px; padding: 8px 12px; resize: none; }
+  .form-item .ipt-sel { width: 100%; height: 40px; background: #f6f7f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; font-size: 14px; color: #1f2329; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .form-item .ipt-sel:active { background: #eee; }
+  .form-item .ipt-sel .placeholder { color: #aab0bb; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-item { flex: 1; }
+  .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .btn { flex: 1; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .btn.cancel { background: #f3f4f6; color: #4a4f57; }
+  .btn.primary { background: #07c160; color: #fff; }
+  .btn:active { transform: scale(.97); }
+  .dept-list { max-height: 260px; overflow-y: auto; }
+  .dept-item { height: 44px; display: flex; align-items: center; padding: 0 16px; font-size: 14px; color: #1f2329; cursor: pointer; border-bottom: 1px solid #f0f2f5; }
+  .dept-item:active { background: #f6f7f9; }
+  .dept-item.selected { color: #07c160; font-weight: 600; }
+  .dept-item.selected::after { content: '✓'; margin-left: auto; color: #07c160; font-weight: 700; }
+  .confirm-mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 60; display: none; align-items: center; justify-content: center; padding: 0 40px; }
+  .confirm-mask.show { display: flex; }
+  .confirm-box { width: 100%; max-width: 280px; background: #fff; border-radius: 14px; overflow: hidden; animation: pop .2s ease; }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .confirm-title { font-size: 16px; font-weight: 600; text-align: center; padding: 22px 20px 8px; color: #1f2329; }
+  .confirm-msg { font-size: 14px; text-align: center; padding: 0 20px 20px; color: #8a8f99; line-height: 1.5; }
+  .confirm-btns { display: flex; border-top: 1px solid #eef0f4; }
+  .confirm-btns .cb { flex: 1; height: 46px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+  .confirm-btns .cb.cancel { color: #4a4f57; border-right: 1px solid #eef0f4; }
+  .confirm-btns .cb.ok { color: #e53935; }
+  .empty-state { text-align: center; color: #8a8f99; padding: 60px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar">
+    <span>12:00</span>
+    <span class="right">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22l4-12 4 12H2zm10 0V8l8 14h-8z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.5 3 3.7 5.7 2 9.5L12 22l10-12.5C20.3 5.7 16.5 3 12 3z"/></svg>
+      <svg width="22" height="12" viewBox="0 0 22 12"><rect x="0" y="1" width="18" height="10" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="3" width="14" height="6" rx="1" fill="currentColor"/><rect x="20" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <div class="navbar">
+    <div class="back" onclick="location.href='home.html'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f2329" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">预算管理</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabAll" onclick="switchTab('all')">全部</div>
+    <div class="tab" id="tabMine" onclick="switchTab('mine')">我申请的</div>
+    <div class="tab" id="tabPending" onclick="switchTab('pending')">待我审批</div>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="搜索品名/申请人" oninput="doSearch()" />
+    </div>
+  </div>
+
+  <div class="list" id="budgetList"></div>
+
+  <div class="fab" onclick="openForm()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    创建预算
+  </div>
+
+  <!-- 预算表单弹窗 -->
+  <div class="mask" id="formModal" onclick="if(event.target===this)closeForm()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-bar"></div>
+      <h4 id="formTitle">创建预算</h4>
+      <div class="form-body">
+        <div class="form-item">
+          <div class="lbl"><span class="req">*</span> 品名</div>
+          <input class="ipt" id="fName" placeholder="请输入品名" />
+        </div>
+        <div class="form-row">
+          <div class="form-item">
+            <div class="lbl">规格</div>
+            <input class="ipt" id="fSpec" placeholder="规格" />
+          </div>
+          <div class="form-item">
+            <div class="lbl">单位</div>
+            <input class="ipt" id="fUnit" placeholder="单位" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-item">
+            <div class="lbl"><span class="req">*</span> 数量</div>
+            <input class="ipt" id="fQty" type="number" placeholder="数量" oninput="calcTotal()" />
+          </div>
+          <div class="form-item">
+            <div class="lbl"><span class="req">*</span> 单价</div>
+            <input class="ipt" id="fPrice" type="number" placeholder="单价" oninput="calcTotal()" />
+          </div>
+        </div>
+        <div class="form-item">
+          <div class="lbl">合计金额</div>
+          <input class="ipt" id="fTotal" disabled placeholder="自动计算" />
+        </div>
+        <div class="form-row">
+          <div class="form-item">
+            <div class="lbl"><span class="req">*</span> 所属学院</div>
+            <div class="ipt-sel" id="fCollege" onclick="openSelect('college')"><span class="placeholder">请选择学院</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+          <div class="form-item">
+            <div class="lbl"><span class="req">*</span> 教研室</div>
+            <div class="ipt-sel" id="fDept" onclick="openSelect('dept')"><span class="placeholder">请选择教研室</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+        </div>
+        <div class="form-item">
+          <div class="lbl"><span class="req">*</span> 申请备注</div>
+          <textarea class="ipt" id="fRemark" placeholder="请输入申请备注"></textarea>
+        </div>
+      </div>
+      <div class="form-actions" style="padding:0 16px;">
+        <div class="btn cancel" onclick="closeForm()">取消</div>
+        <div class="btn primary" onclick="saveForm()">创建并发起申请</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 选择器弹窗 -->
+  <div class="mask" id="selectModal" onclick="if(event.target===this)closeSelect()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-bar"></div>
+      <h4 id="selectTitle">请选择</h4>
+      <div class="dept-list" id="selectList"></div>
+      <div class="form-actions" style="padding:12px 16px 0;">
+        <div class="btn cancel" onclick="closeSelect()">取消</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 撤销确认 -->
+  <div class="confirm-mask" id="confirmRevoke" onclick="if(event.target===this)closeRevokeConfirm()">
+    <div class="confirm-box">
+      <div class="confirm-title">确认撤销</div>
+      <div class="confirm-msg">撤销后将终止该预算审批流程，是否继续？</div>
+      <div class="confirm-btns">
+        <div class="cb cancel" onclick="closeRevokeConfirm()">取消</div>
+        <div class="cb ok" onclick="confirmRevoke()">撤销</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  var currentUser = '张三'; // 当前登录用户
+  var colleges = ['临床学院','药学院','基础医学院','公共卫生学院','护理学院','口腔医学院'];
+  var depts = ['内科教研室','外科教研室','药物分析教研室','解剖学教研室','护理学教研室','口腔医学教研室'];
+  var approvers = ['张教授','李教授','王教授','赵教授','陈教授','周教授'];
+
+  var budgets = [
+    { id:1, name:'高性能离心机', spec:'最高转速15000rpm', unit:'台', quantity:2, price:12000, total:24000, applyCode:'YS-2025-0001', college:'临床学院', dept:'内科教研室', remark:'用于血液样本分离', applicant:'张三', status:'pending', createTime:'2025-07-10 09:30', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-10 10:00', remark:'同意' },
+      { name:'李教授', role:'审批人', status:'pending', time:'', remark:'' }
+    ]},
+    { id:2, name:'荧光定量PCR仪', spec:'96孔实时荧光', unit:'台', quantity:1, price:48000, total:48000, applyCode:'YS-2025-0002', college:'基础医学院', dept:'解剖学教研室', remark:'用于基因表达定量分析', applicant:'李四', status:'pending', createTime:'2025-07-14 09:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-14 10:00', remark:'同意' },
+      { name:'张三', role:'审批人', status:'pending', time:'', remark:'' }
+    ]},
+    { id:3, name:'显微镜', spec:'双目生物显微镜', unit:'台', quantity:5, price:8000, total:40000, applyCode:'YS-2025-0003', college:'药学院', dept:'药物分析教研室', remark:'用于药物晶型观察', applicant:'张三', status:'approved', createTime:'2025-07-09 11:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-09 12:00', remark:'同意采购' },
+      { name:'李教授', role:'审批人', status:'approved', time:'2025-07-09 15:30', remark:'同意' }
+    ]},
+    { id:4, name:'超低温冰箱', spec:'-80℃立式', unit:'台', quantity:2, price:28000, total:56000, applyCode:'YS-2025-0004', college:'临床学院', dept:'内科教研室', remark:'用于生物样本长期保存', applicant:'王五', status:'rejected', createTime:'2025-07-12 08:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-12 09:30', remark:'同意' },
+      { name:'赵教授', role:'审批人', status:'rejected', time:'2025-07-12 14:00', remark:'预算超标，建议压缩数量后再提交' }
+    ]},
+    { id:5, name:'电子天平', spec:'0.1mg精度', unit:'台', quantity:3, price:15000, total:45000, applyCode:'YS-2025-0005', college:'药学院', dept:'药物分析教研室', remark:'用于精密称量实验', applicant:'张三', status:'revoked', createTime:'2025-07-08 10:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-08 11:00', remark:'同意' },
+      { name:'李教授', role:'审批人', status:'pending', time:'', remark:'' }
+    ]}
+  ];
+
+  var activeTab = 'all';
+  var formCollege = '';
+  var formDept = '';
+  var selectTarget = '';
+  var revokeId = -1;
+
+  function switchTab(tab){
+    activeTab = tab;
+    document.getElementById('tabAll').classList.toggle('active', tab==='all');
+    document.getElementById('tabMine').classList.toggle('active', tab==='mine');
+    document.getElementById('tabPending').classList.toggle('active', tab==='pending');
+    document.getElementById('searchInput').value = '';
+    doSearch();
+  }
+
+  function doSearch(){
+    var kw = document.getElementById('searchInput').value.trim().toLowerCase();
+    var list = budgets.filter(function(b){
+      if(activeTab === 'mine') return b.applicant === currentUser;
+      if(activeTab === 'pending') return b.approvers.some(function(a){ return a.name === currentUser && a.status === 'pending'; });
+      return true;
+    });
+    if(kw){
+      list = list.filter(function(b){
+        return (b.name||'').toLowerCase().indexOf(kw)>-1 || (b.applicant||'').toLowerCase().indexOf(kw)>-1;
+      });
+    }
+    render(list);
+  }
+
+  function render(list){
+    var wrap = document.getElementById('budgetList');
+    if(!list.length){ wrap.innerHTML = '<div class="empty-state">暂无预算</div>'; return; }
+    wrap.innerHTML = list.map(function(b){
+      var status = b.status;
+      var statusText = status === 'approved' ? '已通过' : status === 'rejected' ? '不通过' : status === 'revoked' ? '已撤销' : '待审核';
+      var statusClass = status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : status === 'revoked' ? 'revoked' : 'pending';
+      var canRevoke = status === 'pending' && b.applicant === currentUser;
+      return '<div class="card" onclick="goDetail(' + b.id + ')">'
+        +   '<div class="card-head">'
+        +     '<div class="card-title">' + b.name + '</div>'
+        +     '<div class="card-amount">¥' + b.total.toLocaleString() + '</div>'
+        +   '</div>'
+        +   '<div class="card-meta"><span>数量：' + b.quantity + ' ' + b.unit + '</span><span class="dot"></span><span>单价：¥' + b.price.toLocaleString() + '</span></div>'
+        +   '<div class="card-meta"><span>申请人：' + b.applicant + '</span><span class="dot"></span><span>' + b.createTime + '</span></div>'
+        +   '<div class="card-foot">'
+        +     '<span class="card-status ' + statusClass + '"><span class="s-dot"></span>' + statusText + '</span>'
+        +     (canRevoke?'<span class="card-status" style="background:#f3f4f6;color:#4a4f57;" onclick="event.stopPropagation();revokeBudget('+b.id+')">撤销</span>':'')
+        +   '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function goDetail(id){
+    sessionStorage.setItem('budgetData', JSON.stringify(budgets));
+    location.href = 'budget-detail.html?id=' + id + '&tab=' + activeTab;
+  }
+
+  function openForm(){
+    document.getElementById('formTitle').textContent = '创建预算';
+    document.getElementById('fName').value = '';
+    document.getElementById('fSpec').value = '';
+    document.getElementById('fUnit').value = '';
+    document.getElementById('fQty').value = '';
+    document.getElementById('fPrice').value = '';
+    document.getElementById('fTotal').value = '';
+    document.getElementById('fRemark').value = '';
+    formCollege = ''; formDept = '';
+    setSelText('fCollege', '请选择学院');
+    setSelText('fDept', '请选择教研室');
+    document.getElementById('formModal').classList.add('show');
+  }
+  function closeForm(){ document.getElementById('formModal').classList.remove('show'); }
+
+  function calcTotal(){
+    var q = parseFloat(document.getElementById('fQty').value) || 0;
+    var p = parseFloat(document.getElementById('fPrice').value) || 0;
+    document.getElementById('fTotal').value = q && p ? '¥' + (q*p).toLocaleString() : '';
+  }
+
+  function setSelText(id, text){
+    var el = document.getElementById(id);
+    el.querySelector('span').textContent = text;
+    if(text.indexOf('请选择')===0) el.querySelector('span').classList.add('placeholder');
+    else el.querySelector('span').classList.remove('placeholder');
+  }
+
+  function openSelect(target){
+    selectTarget = target;
+    var list = target === 'college' ? colleges : depts;
+    var curVal = target === 'college' ? formCollege : formDept;
+    document.getElementById('selectTitle').textContent = target === 'college' ? '选择所属学院' : '选择教研室';
+    document.getElementById('selectList').innerHTML = list.map(function(item){
+      return '<div class="dept-item' + (item===curVal?' selected':'') + '" onclick="pickSelect(\''+item+'\')">'+item+'</div>';
+    }).join('');
+    document.getElementById('selectModal').classList.add('show');
+  }
+  function closeSelect(){ document.getElementById('selectModal').classList.remove('show'); }
+  function pickSelect(val){
+    if(selectTarget === 'college'){ formCollege = val; setSelText('fCollege', val); }
+    else { formDept = val; setSelText('fDept', val); }
+    closeSelect();
+  }
+
+  function saveForm(){
+    var name = document.getElementById('fName').value.trim();
+    var spec = document.getElementById('fSpec').value.trim();
+    var unit = document.getElementById('fUnit').value.trim();
+    var qty = parseFloat(document.getElementById('fQty').value);
+    var price = parseFloat(document.getElementById('fPrice').value);
+    var remark = document.getElementById('fRemark').value.trim();
+
+    if(!name){ toast('请输入品名'); return; }
+    if(!qty || qty <= 0){ toast('请输入有效的数量'); return; }
+    if(!price || price <= 0){ toast('请输入有效的单价'); return; }
+    if(!formCollege){ toast('请选择所属学院'); return; }
+    if(!formDept){ toast('请选择教研室'); return; }
+    if(!remark){ toast('请输入申请备注'); return; }
+
+    var total = qty * price;
+    var codeNum = budgets.length + 6;
+    var applyCode = 'YS-' + new Date().getFullYear() + '-' + String(codeNum).padStart(4, '0');
+    // 模拟审批人规则：默认2人审批
+    var newApprovers = [
+      { name:'张教授', status:'pending', time:'', remark:'' },
+      { name:'张三', status:'pending', time:'', remark:'' }
+    ];
+
+    budgets.unshift({
+      id: Date.now(),
+      name: name, spec: spec, unit: unit, quantity: qty, price: price, total: total, applyCode: applyCode,
+      college: formCollege, dept: formDept, remark: remark,
+      applicant: currentUser, status: 'pending', createTime: formatNow(),
+      approvers: newApprovers
+    });
+
+    sessionStorage.setItem('budgetData', JSON.stringify(budgets));
+    toast('预算已创建并发起申请');
+    closeForm();
+    switchTab('mine');
+  }
+
+  function formatNow(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+
+  function revokeBudget(id){
+    revokeId = id;
+    document.getElementById('confirmRevoke').classList.add('show');
+  }
+  function closeRevokeConfirm(){ document.getElementById('confirmRevoke').classList.remove('show'); revokeId = -1; }
+  function confirmRevoke(){
+    if(revokeId < 0) return;
+    var idx = budgets.findIndex(function(b){ return b.id === revokeId; });
+    if(idx > -1){
+      budgets[idx].status = 'revoked';
+      sessionStorage.setItem('budgetData', JSON.stringify(budgets));
+      toast('已撤销');
+      doSearch();
+    }
+    closeRevokeConfirm();
+  }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+
+  render(budgets);
+
+  // 处理从详情页返回的 tab 参数
+  (function(){
+    var params = new URLSearchParams(window.location.search);
+    var tab = params.get('tab') || '';
+    if(tab){
+      history.replaceState({}, '', 'budget-management.html');
+      switchTab(tab);
+    }
+  })();
+</script>
+</body>
+</html>

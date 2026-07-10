@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>实验项目</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f1f4fa; color: #1f2329; }
+  .phone { position: relative; width: 375px; height: 812px; margin: 20px auto; background: #f1f4fa; border-radius: 30px; box-shadow: 0 6px 24px rgba(0,0,0,.12); overflow: hidden; }
+  .statusbar { height: 44px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #1f2329; background: #f1f4fa; }
+  .statusbar .right { display: flex; align-items: center; gap: 6px; }
+  .navbar { height: 44px; display: flex; align-items: center; position: relative; background: #f1f4fa; padding: 0 12px; }
+  .navbar .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+  .navbar .title { flex: 1; font-size: 17px; font-weight: 600; color: #1f2329; text-align: center; margin-right: 32px; }
+  .tabs { display: flex; background: #f1f4fa; padding: 0 14px; }
+  .tab { flex: 1; text-align: center; font-size: 14px; color: #8a8f99; padding: 10px 0; position: relative; cursor: pointer; font-weight: 500; }
+  .tab.active { color: #9b8cff; font-weight: 600; }
+  .tab.active::after { content: ''; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 24px; height: 3px; background: #9b8cff; border-radius: 2px; }
+  .search-wrap { padding: 8px 14px 6px; background: #f1f4fa; }
+  .search { display: flex; align-items: center; gap: 6px; height: 36px; background: #fff; border-radius: 10px; padding: 0 10px; border: 1.5px solid #e5e7eb; }
+  .search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; color: #1f2329; }
+  .search input::placeholder { color: #aab0bb; }
+  .list { padding: 8px 14px 100px; overflow-y: auto; height: calc(100% - 44px - 44px - 44px - 50px); }
+  .card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; }
+  .card:active { background: #f8f9fb; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .card-title { font-size: 15px; font-weight: 600; color: #1f2329; }
+  .card-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8a8f99; margin-bottom: 4px; }
+  .card-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: #d0d4dc; }
+  .card-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+  .card-status.pending { background: #fff8e1; color: #f9a825; }
+  .card-status.approved { background: #e6f7ef; color: #07c160; }
+  .card-status.rejected { background: #ffeaea; color: #e53935; }
+  .card-status.revoked { background: #f3f4f6; color: #8a8f99; }
+  .card-status .s-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .card-status.pending .s-dot { background: #f9a825; }
+  .card-status.approved .s-dot { background: #07c160; }
+  .card-status.rejected .s-dot { background: #e53935; }
+  .card-status.revoked .s-dot { background: #8a8f99; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .fab { position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; background: #9b8cff; color: #fff; height: 46px; width: 200px; border-radius: 23px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 16px rgba(155,140,255,.35); cursor: pointer; }
+  .fab:active { transform: translateX(-50%) scale(.96); }
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+  .mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
+  .mask.show { display: flex; }
+  .modal { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 10px 0 28px; animation: slideUp .25s ease; max-height: 92%; overflow-y: auto; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-bar { width: 36px; height: 4px; border-radius: 2px; background: #e1e5ec; margin: 6px auto 14px; }
+  .modal h4 { font-size: 16px; text-align: center; margin-bottom: 14px; color: #1f2329; }
+  .form-body { padding: 0 16px; }
+  .form-item { margin-bottom: 12px; }
+  .form-item .lbl { font-size: 13px; color: #4a4f57; margin-bottom: 6px; }
+  .form-item .lbl .req { color: #ff3b30; }
+  .form-item .ipt { width: 100%; height: 40px; background: #f6f7f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; font-size: 14px; color: #1f2329; outline: 0; }
+  .form-item .ipt:focus { border-color: #9b8cff; background: #fff; }
+  .form-item textarea.ipt { height: 70px; padding: 8px 12px; resize: none; }
+  .form-item .ipt-sel { width: 100%; height: 40px; background: #f6f7f9; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; font-size: 14px; color: #1f2329; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .form-item .ipt-sel:active { background: #eee; }
+  .form-item .ipt-sel .placeholder { color: #aab0bb; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-item { flex: 1; }
+  .switch-row { display: flex; gap: 8px; }
+  .switch-opt { flex: 1; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; color: #4a4f57; background: #fff; cursor: pointer; }
+  .switch-opt.active { border-color: #9b8cff; background: #f3f0ff; color: #9b8cff; }
+  .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .btn { flex: 1; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .btn.cancel { background: #f3f4f6; color: #4a4f57; }
+  .btn.primary { background: #9b8cff; color: #fff; }
+  .btn:active { transform: scale(.97); }
+  .dept-list { max-height: 260px; overflow-y: auto; }
+  .dept-item { height: 44px; display: flex; align-items: center; padding: 0 16px; font-size: 14px; color: #1f2329; cursor: pointer; border-bottom: 1px solid #f0f2f5; }
+  .dept-item:active { background: #f6f7f9; }
+  .dept-item.selected { color: #9b8cff; font-weight: 600; }
+  .dept-item.selected::after { content: '✓'; margin-left: auto; color: #9b8cff; font-weight: 700; }
+  .confirm-mask { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 60; display: none; align-items: center; justify-content: center; padding: 0 40px; }
+  .confirm-mask.show { display: flex; }
+  .confirm-box { width: 100%; max-width: 280px; background: #fff; border-radius: 14px; overflow: hidden; animation: pop .2s ease; }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .confirm-title { font-size: 16px; font-weight: 600; text-align: center; padding: 22px 20px 8px; color: #1f2329; }
+  .confirm-msg { font-size: 14px; text-align: center; padding: 0 20px 20px; color: #8a8f99; line-height: 1.5; }
+  .confirm-btns { display: flex; border-top: 1px solid #eef0f4; }
+  .confirm-btns .cb { flex: 1; height: 46px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+  .confirm-btns .cb.cancel { color: #4a4f57; border-right: 1px solid #eef0f4; }
+  .confirm-btns .cb.ok { color: #e53935; }
+  .empty-state { text-align: center; color: #8a8f99; padding: 60px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar">
+    <span>12:00</span>
+    <span class="right">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22l4-12 4 12H2zm10 0V8l8 14h-8z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.5 3 3.7 5.7 2 9.5L12 22l10-12.5C20.3 5.7 16.5 3 12 3z"/></svg>
+      <svg width="22" height="12" viewBox="0 0 22 12"><rect x="0" y="1" width="18" height="10" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="3" width="14" height="6" rx="1" fill="currentColor"/><rect x="20" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </span>
+  </div>
+  <div class="navbar">
+    <div class="back" onclick="location.href='home.html'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f2329" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">实验项目</div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" id="tabAll" onclick="switchTab('all')">全部</div>
+    <div class="tab" id="tabMine" onclick="switchTab('mine')">我申请的</div>
+    <div class="tab" id="tabPending" onclick="switchTab('pending')">待我审批</div>
+  </div>
+  <div class="search-wrap">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="搜索项目名称/申请人" oninput="doSearch()" />
+    </div>
+  </div>
+  <div class="list" id="expList"></div>
+  <div class="fab" onclick="openForm()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    创建实验项目
+  </div>
+
+  <!-- 表单弹窗 -->
+  <div class="mask" id="formModal" onclick="if(event.target===this)closeForm()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-bar"></div>
+      <h4>创建实验项目</h4>
+      <div class="form-body" id="formBody"></div>
+      <div class="form-actions" style="padding:0 16px;">
+        <div class="btn cancel" onclick="closeForm()">取消</div>
+        <div class="btn primary" onclick="saveForm()">创建并发起申请</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 选择器弹窗 -->
+  <div class="mask" id="selectModal" onclick="if(event.target===this)closeSelect()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-bar"></div>
+      <h4 id="selectTitle">请选择</h4>
+      <div class="dept-list" id="selectList"></div>
+      <div class="form-actions" style="padding:12px 16px 0;">
+        <div class="btn cancel" onclick="closeSelect()">取消</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 撤销确认 -->
+  <div class="confirm-mask" id="confirmRevoke" onclick="if(event.target===this)closeRevokeConfirm()">
+    <div class="confirm-box">
+      <div class="confirm-title">确认撤销</div>
+      <div class="confirm-msg">撤销后将终止该实验项目审批流程，是否继续？</div>
+      <div class="confirm-btns">
+        <div class="cb cancel" onclick="closeRevokeConfirm()">取消</div>
+        <div class="cb ok" onclick="confirmRevoke()">撤销</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  var currentUser = '张三';
+  var colleges = ['临床学院','药学院','基础医学院','公共卫生学院','护理学院','口腔医学院'];
+  var courses = ['临床诊断学','药物化学','人体解剖学','药理学','病理学'];
+  var enabledLabs = [
+    { id:1, name:'多通道沉浸式CAVE虚实结合智能实训室' },
+    { id:3, name:'公共虚拟仿真实训中心' },
+    { id:5, name:'模拟ICU综合急救诊疗技能实训室' },
+    { id:6, name:'外科基本技能实训室' }
+  ];
+
+  var experiments = [
+    { id:1, name:'关节学与肌学', applyCode:'SY-2025-0001', college:'临床学院', course:'临床诊断学', major:'临床医学专业', lab:'模拟ICU综合急救诊疗技能实训室', hours:32, purpose:'培养临床诊断与急救综合技能', useAnimal:'否', equipment:'模拟人、心电监护仪、除颤仪', reagents:'一次性手套、消毒液、纱布', loanEquipment:'德促贷款-模拟人系统', expType:'综合实训', remark:'已纳入本学期教学计划', procedure:'严格遵守实验室安全规范', risk:'低风险，需注意用电安全', ethics:'无需伦理审查', competency:'具备基本临床技能操作能力', contestName:'全国临床技能大赛', certName:'临床技能等级证书', applicant:'张三', status:'pending', createTime:'2025-07-15 08:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-15 09:30', remark:'同意' },
+      { name:'李教授', role:'审批人', status:'pending', time:'', remark:'' }
+    ]},
+    { id:2, name:'消化与呼吸道', applyCode:'SY-2025-0002', college:'药学院', course:'药物化学', major:'药学专业', lab:'公共虚拟仿真实训中心', hours:48, purpose:'掌握药物分析基本方法', useAnimal:'否', equipment:'高效液相色谱仪、紫外分光光度计', reagents:'标准品、流动相溶剂', loanEquipment:'', expType:'实验教学', remark:'已纳入教学大纲', procedure:'严格遵守化学实验室规范', risk:'注意有机溶剂防护', ethics:'无需伦理审查', competency:'具备化学实验基本操作能力', contestName:'', certName:'', applicant:'李四', status:'pending', createTime:'2025-07-16 10:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-16 11:00', remark:'同意' },
+      { name:'张三', role:'审批人', status:'pending', time:'', remark:'' }
+    ]},
+    { id:3, name:'泌尿与生殖系统', applyCode:'SY-2025-0003', college:'基础医学院', course:'人体解剖学', major:'临床医学专业', lab:'外科基本技能实训室', hours:64, purpose:'掌握人体解剖结构', useAnimal:'否', equipment:'解剖台、解剖器械套装', reagents:'福尔马林固定液', loanEquipment:'', expType:'实验教学', remark:'核心必修课程', procedure:'严格遵守解剖实验室规范', risk:'注意刀具使用安全，需配备急救箱', ethics:'已通过伦理审查', competency:'具备解剖学基础', contestName:'', certName:'', applicant:'张三', status:'approved', createTime:'2025-07-10 14:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-10 15:00', remark:'同意' },
+      { name:'李教授', role:'审批人', status:'approved', time:'2025-07-10 16:30', remark:'同意' }
+    ]},
+    { id:4, name:'心血管系统', applyCode:'SY-2025-0004', college:'基础医学院', course:'药理学', major:'药学专业', lab:'公共虚拟仿真实训中心', hours:56, purpose:'掌握动物实验基本操作及伦理规范', useAnimal:'是', equipment:'小动物麻醉机、手术器械套装、生物信号采集系统', reagents:'麻醉剂、消毒液、生理盐水', loanEquipment:'德促贷款-生物信号采集系统', expType:'综合实训', remark:'需提前一周提交动物使用申请', procedure:'严格遵守实验动物管理与使用规范，实验后做好废弃物分类处理', risk:'动物咬伤风险，麻醉剂使用风险，需配备急救药品', ethics:'需提交伦理审查，已通过动物实验伦理委员会审批', competency:'需持有实验动物从业人员上岗证', contestName:'', certName:'实验动物从业人员上岗证', applicant:'赵六', status:'rejected', createTime:'2025-07-13 09:00', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-13 10:30', remark:'同意，注意动物伦理合规' },
+      { name:'王教授', role:'审批人', status:'rejected', time:'2025-07-13 16:00', remark:'实验动物使用方案中安全防护措施不够完善，请补充应急预案后重新提交' }
+    ]},
+    { id:5, name:'神经系统解剖实验', applyCode:'SY-2025-0005', college:'临床学院', course:'人体解剖学', major:'临床医学专业', lab:'外科基本技能实训室', hours:40, purpose:'掌握神经系统解剖结构及功能分区', useAnimal:'否', equipment:'解剖台、神经解剖模型、显微镜', reagents:'福尔马林固定液、染色剂', loanEquipment:'', expType:'实验教学', remark:'因教学计划调整暂不开展，申请撤销', procedure:'严格遵守解剖实验室操作规范', risk:'刀具使用安全，注意固定液挥发防护', ethics:'无需伦理审查', competency:'具备解剖学基础', contestName:'', certName:'', applicant:'张三', status:'revoked', createTime:'2025-07-08 08:30', approvers:[
+      { name:'张教授', role:'直接主管', status:'approved', time:'2025-07-08 09:30', remark:'同意' },
+      { name:'李教授', role:'审批人', status:'pending', time:'', remark:'' }
+    ]}
+  ];
+
+  var activeTab = 'all';
+  var revokeId = -1;
+  var formCollege='', formCourse='', formLab='', formUseAnimal='否';
+  var selectTarget = '';
+
+  function switchTab(tab){
+    activeTab = tab;
+    document.getElementById('tabAll').classList.toggle('active', tab==='all');
+    document.getElementById('tabMine').classList.toggle('active', tab==='mine');
+    document.getElementById('tabPending').classList.toggle('active', tab==='pending');
+    document.getElementById('searchInput').value = '';
+    doSearch();
+  }
+
+  function doSearch(){
+    var kw = document.getElementById('searchInput').value.trim().toLowerCase();
+    var list = experiments.filter(function(e){
+      if(activeTab === 'mine') return e.applicant === currentUser;
+      if(activeTab === 'pending') return e.approvers.some(function(a){ return a.name === currentUser && a.status === 'pending'; });
+      return true;
+    });
+    if(kw){
+      list = list.filter(function(e){
+        return (e.name||'').toLowerCase().indexOf(kw)>-1 || (e.applicant||'').toLowerCase().indexOf(kw)>-1;
+      });
+    }
+    render(list);
+  }
+
+  function render(list){
+    var wrap = document.getElementById('expList');
+    if(!list.length){ wrap.innerHTML = '<div class="empty-state">暂无实验项目</div>'; return; }
+    wrap.innerHTML = list.map(function(e){
+      var status = e.status;
+      var statusText = status === 'approved' ? '已通过' : status === 'rejected' ? '不通过' : status === 'revoked' ? '已撤销' : '待审核';
+      var statusClass = status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : status === 'revoked' ? 'revoked' : 'pending';
+      var canRevoke = status === 'pending' && e.applicant === currentUser;
+      return '<div class="card" onclick="goDetail(' + e.id + ')">'
+        + '<div class="card-head"><div class="card-title">' + e.name + '</div></div>'
+        + '<div class="card-meta"><span>编号：' + e.applyCode + '</span><span class="dot"></span><span>' + e.college + '</span></div>'
+        + '<div class="card-meta"><span>实验室：' + (e.lab||'—') + '</span><span class="dot"></span><span>学时：' + e.hours + '</span></div>'
+        + '<div class="card-meta"><span>申请人：' + e.applicant + '</span><span class="dot"></span><span>' + e.createTime + '</span></div>'
+        + '<div class="card-foot">'
+        +   '<span class="card-status ' + statusClass + '"><span class="s-dot"></span>' + statusText + '</span>'
+        +   (canRevoke?'<span class="card-status" style="background:#f3f4f6;color:#4a4f57;" onclick="event.stopPropagation();revokeExp('+e.id+')">撤销</span>':'')
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function goDetail(id){
+    sessionStorage.setItem('experimentData', JSON.stringify(experiments));
+    location.href = 'experiment-detail.html?id=' + id + '&tab=' + activeTab;
+  }
+
+  function setSelText(id, text){
+    var el = document.getElementById(id);
+    el.querySelector('span').textContent = text;
+    if(text.indexOf('请选择')===0) el.querySelector('span').classList.add('placeholder');
+    else el.querySelector('span').classList.remove('placeholder');
+  }
+
+  function openSelect(target){
+    selectTarget = target;
+    var list, curVal, title;
+    if(target === 'college'){ list = colleges; curVal = formCollege; title = '选择所属学院'; }
+    else if(target === 'course'){ list = courses; curVal = formCourse; title = '选择课程'; }
+    else { list = enabledLabs.map(function(l){ return l.name; }); curVal = formLab; title = '选择实验室'; }
+    document.getElementById('selectTitle').textContent = title;
+    document.getElementById('selectList').innerHTML = list.map(function(item){
+      return '<div class="dept-item' + (item===curVal?' selected':'') + '" onclick="pickSelect(\''+item+'\')">'+item+'</div>';
+    }).join('');
+    document.getElementById('selectModal').classList.add('show');
+  }
+  function closeSelect(){ document.getElementById('selectModal').classList.remove('show'); }
+  function pickSelect(val){
+    if(selectTarget === 'college'){ formCollege = val; setSelText('fCollege', val); }
+    else if(selectTarget === 'course'){ formCourse = val; setSelText('fCourse', val); }
+    else { formLab = val; setSelText('fLab', val); }
+    closeSelect();
+  }
+
+  function openForm(){
+    formCollege = ''; formCourse = ''; formLab = ''; formUseAnimal = '否';
+
+    document.getElementById('formBody').innerHTML = ''
+      + '<div class="form-row"><div class="form-item"><div class="lbl"><span class="req">*</span> 所属学院</div><div class="ipt-sel" id="fCollege" onclick="openSelect(\'college\')"><span class="placeholder">请选择学院</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div></div>'
+      + '<div class="form-item"><div class="lbl"><span class="req">*</span> 课程</div><div class="ipt-sel" id="fCourse" onclick="openSelect(\'course\')"><span class="placeholder">请选择课程</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div></div></div>'
+      + '<div class="form-item"><div class="lbl">服务专业</div><input class="ipt" id="fMajor" placeholder="请输入服务专业" /></div>'
+      + '<div class="form-item"><div class="lbl"><span class="req">*</span> 实验项目名称</div><input class="ipt" id="fName" placeholder="请输入实验项目名称" /></div>'
+      + '<div class="form-item"><div class="lbl"><span class="req">*</span> 实验室</div><div class="ipt-sel" id="fLab" onclick="openSelect(\'lab\')"><span class="placeholder">请选择实验室</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aab0bb" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div></div>'
+      + '<div class="form-row"><div class="form-item"><div class="lbl"><span class="req">*</span> 学时</div><input class="ipt" id="fHours" type="number" placeholder="学时" /></div>'
+      + '<div class="form-item"><div class="lbl">是否使用实验动物</div><div class="switch-row"><div class="switch-opt active" id="optNo" onclick="pickAnimal(\'否\')">否</div><div class="switch-opt" id="optYes" onclick="pickAnimal(\'是\')">是</div></div></div></div>'
+      + '<div class="form-item"><div class="lbl"><span class="req">*</span> 实验目的</div><textarea class="ipt" id="fPurpose" placeholder="请输入实验目的"></textarea></div>'
+      + '<div class="form-item"><div class="lbl">使用的仪器设备</div><input class="ipt" id="fEquipment" placeholder="请输入使用的仪器设备" /></div>'
+      + '<div class="form-item"><div class="lbl">所需试剂耗材</div><input class="ipt" id="fReagents" placeholder="请输入所需试剂耗材" /></div>'
+      + '<div class="form-item"><div class="lbl">德促贷款设备名称</div><input class="ipt" id="fLoanEquipment" placeholder="请输入德促贷款设备名称" /></div>'
+      + '<div class="form-item"><div class="lbl">实验类型</div><input class="ipt" id="fExpType" placeholder="如：综合实训、实验教学" /></div>'
+      + '<div class="form-item"><div class="lbl"><span class="req">*</span> 申请备注</div><textarea class="ipt" id="fRemark" placeholder="请输入申请备注"></textarea></div>'
+      + '<div class="form-item"><div class="lbl">操作规范</div><textarea class="ipt" id="fProcedure" placeholder="请输入操作规范"></textarea></div>'
+      + '<div class="form-item"><div class="lbl">风险评估</div><textarea class="ipt" id="fRisk" placeholder="请输入风险评估"></textarea></div>'
+      + '<div class="form-item"><div class="lbl">伦理审查</div><input class="ipt" id="fEthics" placeholder="请输入伦理审查结果" /></div>'
+      + '<div class="form-item"><div class="lbl">岗位及能力</div><input class="ipt" id="fCompetency" placeholder="请输入岗位及能力要求" /></div>'
+      + '<div class="form-item"><div class="lbl">竞赛名称</div><input class="ipt" id="fContestName" placeholder="请输入竞赛名称" /></div>'
+      + '<div class="form-item"><div class="lbl">证书名称</div><input class="ipt" id="fCertName" placeholder="请输入证书名称" /></div>';
+
+    document.getElementById('formModal').classList.add('show');
+  }
+
+  function closeForm(){ document.getElementById('formModal').classList.remove('show'); }
+
+  function pickAnimal(val){
+    formUseAnimal = val;
+    document.getElementById('optYes').classList.toggle('active', val==='是');
+    document.getElementById('optNo').classList.toggle('active', val==='否');
+  }
+
+  function saveForm(){
+    var name = document.getElementById('fName').value.trim();
+    if(!name){ toast('请输入实验项目名称'); return; }
+    if(!formCollege){ toast('请选择所属学院'); return; }
+    if(!formCourse){ toast('请选择课程'); return; }
+    if(!formLab){ toast('请选择实验室'); return; }
+    var hours = parseInt(document.getElementById('fHours').value) || 0;
+    if(!hours){ toast('请输入学时'); return; }
+    var purpose = document.getElementById('fPurpose').value.trim();
+    if(!purpose){ toast('请输入实验目的'); return; }
+    var remark = document.getElementById('fRemark').value.trim();
+    if(!remark){ toast('请输入申请备注'); return; }
+
+    var codeNum = experiments.length + 4;
+    var applyCode = 'SY-' + new Date().getFullYear() + '-' + String(codeNum).padStart(4, '0');
+
+    var newApprovers = [
+      { name:'张教授', role:'直接主管', status:'pending', time:'', remark:'' },
+      { name:'张三', role:'审批人', status:'pending', time:'', remark:'' }
+    ];
+
+    experiments.unshift({
+      id: Date.now(),
+      name: name, applyCode: applyCode,
+      college: formCollege, course: formCourse,
+      major: document.getElementById('fMajor').value.trim(),
+      lab: formLab, hours: hours,
+      useAnimal: formUseAnimal, purpose: purpose,
+      equipment: document.getElementById('fEquipment').value.trim(),
+      reagents: document.getElementById('fReagents').value.trim(),
+      loanEquipment: document.getElementById('fLoanEquipment').value.trim(),
+      expType: document.getElementById('fExpType').value.trim(),
+      remark: document.getElementById('fRemark').value.trim(),
+      procedure: document.getElementById('fProcedure').value.trim(),
+      risk: document.getElementById('fRisk').value.trim(),
+      ethics: document.getElementById('fEthics').value.trim(),
+      competency: document.getElementById('fCompetency').value.trim(),
+      contestName: document.getElementById('fContestName').value.trim(),
+      certName: document.getElementById('fCertName').value.trim(),
+      applicant: currentUser, status: 'pending', createTime: formatNow(),
+      approvers: newApprovers
+    });
+
+    sessionStorage.setItem('experimentData', JSON.stringify(experiments));
+    toast('实验项目已创建并发起申请');
+    closeForm();
+    switchTab('mine');
+  }
+
+  function revokeExp(id){
+    revokeId = id;
+    document.getElementById('confirmRevoke').classList.add('show');
+  }
+  function closeRevokeConfirm(){ document.getElementById('confirmRevoke').classList.remove('show'); revokeId = -1; }
+  function confirmRevoke(){
+    if(revokeId < 0) return;
+    var idx = experiments.findIndex(function(e){ return e.id === revokeId; });
+    if(idx > -1){
+      experiments[idx].status = 'revoked';
+      sessionStorage.setItem('experimentData', JSON.stringify(experiments));
+      toast('已撤销');
+      doSearch();
+    }
+    closeRevokeConfirm();
+  }
+
+  function formatNow(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+
+  render(experiments);
+
+  (function(){
+    var params = new URLSearchParams(window.location.search);
+    var tab = params.get('tab') || '';
+    if(tab){ history.replaceState({}, '', 'experiment-management.html'); switchTab(tab); }
+  })();
+</script>
+</body>
+</html>

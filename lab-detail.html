@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>实验室详情</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f1f4fa; color: #1f2329; }
+  .phone { position: relative; width: 375px; height: 812px; margin: 20px auto; background: #f1f4fa; border-radius: 30px; box-shadow: 0 6px 24px rgba(0,0,0,.12); overflow: hidden; }
+  .statusbar { height: 44px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #1f2329; background: #f1f4fa; }
+  .statusbar .right { display: flex; align-items: center; gap: 6px; }
+  .navbar { height: 44px; display: flex; align-items: center; position: relative; background: #f1f4fa; padding: 0 12px; }
+  .navbar .back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+  .navbar .title { flex: 1; font-size: 17px; font-weight: 600; color: #1f2329; text-align: center; margin-right: 32px; }
+  .content { padding: 0 14px 100px; overflow-y: auto; height: calc(100% - 44px - 44px); }
+
+  .header-card { background: #fff; border-radius: 14px; padding: 18px 16px; margin-bottom: 10px; }
+  .header-top { display: flex; gap: 14px; }
+  .header-img { width: 80px; height: 80px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: #eef0f4; }
+  .header-img img { width: 100%; height: 100%; object-fit: cover; }
+  .header-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .header-name { font-size: 16px; font-weight: 700; color: #1f2329; line-height: 1.4; margin-bottom: 6px; }
+  .header-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 3px 10px; border-radius: 6px; font-weight: 600; }
+  .status-badge.enabled { background: #e6f7ef; color: #07c160; }
+  .status-badge.disabled { background: #f3f4f6; color: #8a8f99; }
+  .status-badge .s-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .status-badge.enabled .s-dot { background: #07c160; }
+  .status-badge.disabled .s-dot { background: #8a8f99; }
+
+  .section { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+  .section-title { font-size: 13px; color: #8a8f99; font-weight: 500; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .section-title::before { content: ''; width: 3px; height: 14px; background: #2f7bff; border-radius: 2px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+  .info-item .lbl { font-size: 12px; color: #8a8f99; margin-bottom: 3px; }
+  .info-item .val { font-size: 15px; font-weight: 600; color: #1f2329; word-break: break-all; }
+  .info-full { margin-top: 4px; }
+  .info-full .lbl { font-size: 12px; color: #8a8f99; margin-bottom: 3px; }
+  .info-full .val { font-size: 14px; color: #1f2329; line-height: 1.6; word-break: break-all; }
+
+  .bottom-bar { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px 14px 28px; display: flex; gap: 10px; background: linear-gradient(180deg, transparent 0%, #f1f4fa 20%, #f1f4fa 100%); }
+  .btn { flex: 1; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn:active { transform: scale(.97); }
+  .btn.back { background: #f3f4f6; color: #4a4f57; }
+  .btn.edit { background: #2f7bff; color: #fff; }
+
+  .home-indicator { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1f2329; }
+  .toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 260px; text-align: center; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar">
+    <span>12:00</span>
+    <span class="right">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22l4-12 4 12H2zm10 0V8l8 14h-8z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.5 3 3.7 5.7 2 9.5L12 22l10-12.5C20.3 5.7 16.5 3 12 3z"/></svg>
+      <svg width="22" height="12" viewBox="0 0 22 12"><rect x="0" y="1" width="18" height="10" rx="2" fill="none" stroke="currentColor"/><rect x="2" y="3" width="14" height="6" rx="1" fill="currentColor"/><rect x="20" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <div class="navbar">
+    <div class="back" onclick="goBack()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f2329" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="title">实验室详情</div>
+  </div>
+
+  <div class="content" id="detailContent"></div>
+
+  <div class="bottom-bar">
+    <div class="btn back" onclick="goBack()">返回列表</div>
+    <div class="btn edit" onclick="goEdit()">编辑</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  var defaultLabs = [
+    { id:1, name:'多通道沉浸式CAVE虚实结合智能实训室', code:'LAB-2024-001', type:'虚拟仿真实训室', admin:'张教授', college:'临床学院', location:'科研楼A座302室', workstation:60, description:'沉浸式CAVE虚拟仿真系统，支持多通道投影与虚实结合训练。', status:'enabled', img:'https://placehold.co/200x200/e8f0ff/2f7bff?text=CAVE' },
+    { id:2, name:'综合置管虚实结合智能实训室', code:'LAB-2024-002', type:'技能实训室', admin:'李教授', college:'药学院', location:'药学楼B座105室', workstation:45, description:'综合置管技能训练与虚拟仿真结合，覆盖多种置管操作场景。', status:'disabled', img:'https://placehold.co/200x200/fff3e0/ff8a00?text=置管' },
+    { id:3, name:'公共虚拟仿真实训中心', code:'LAB-2024-003', type:'虚拟仿真实训室', admin:'王教授', college:'基础医学院', location:'医学楼C座208室', workstation:80, description:'公共虚拟仿真实训平台，支持多专业共享使用。', status:'enabled', img:'https://placehold.co/200x200/e6f7ef/07c160?text=VR' },
+    { id:4, name:'超级仿真临床综合诊疗技能实训室', code:'LAB-2024-004', type:'综合实训室', admin:'赵教授', college:'公共卫生学院', location:'公卫楼D座401室', workstation:32, description:'超级仿真模拟人结合综合诊疗技能训练系统。', status:'disabled', img:'https://placehold.co/200x200/f3e8ff/9b8cff?text=仿真' },
+    { id:5, name:'模拟ICU综合急救诊疗技能实训室', code:'LAB-2024-005', type:'急救实训室', admin:'陈教授', college:'临床学院', location:'科研楼A座501室', workstation:55, description:'模拟ICU场景，开展综合急救与诊疗技能训练。', status:'enabled', img:'https://placehold.co/200x200/ffeaea/e53935?text=ICU' },
+    { id:6, name:'外科基本技能实训室', code:'LAB-2024-006', type:'外科实训室', admin:'周教授', college:'药学院', location:'药学楼B座202室', workstation:70, description:'外科基本操作技能训练，配备标准化手术器械与模拟人。', status:'enabled', img:'https://placehold.co/200x200/e8f4ff/2f7bff?text=外科' }
+  ];
+
+  var labData = null;
+  var labId = -1;
+
+  function init(){
+    var params = new URLSearchParams(window.location.search);
+    labId = parseInt(params.get('id')) || -1;
+    if(labId < 0){ toast('参数错误'); return; }
+
+    var stored = sessionStorage.getItem('labData');
+    if(stored){
+      try { labData = JSON.parse(stored); } catch(e){}
+    }
+    if(!labData) labData = defaultLabs;
+
+    var l = labData.find(function(x){ return x.id === labId; });
+    if(!l){ toast('未找到该实验室'); return; }
+    renderDetail(l);
+  }
+
+  function renderDetail(l){
+    var statusText = l.status === 'enabled' ? '启用' : '禁用';
+    var statusClass = l.status;
+
+    var html = ''
+      + '<div class="header-card">'
+      +   '<div class="header-top">'
+      +     '<div class="header-img"><img src="' + (l.img || 'https://placehold.co/200x200/e8f0ff/2f7bff?text=LAB') + '" alt=""/></div>'
+      +     '<div class="header-info">'
+      +       '<div class="header-name">' + l.name + '</div>'
+      +       '<div class="header-meta">'
+      +         '<span class="status-badge ' + statusClass + '"><span class="s-dot"></span>' + statusText + '</span>'
+      +         '<span style="font-size:12px;color:#8a8f99;">' + (l.code || '—') + '</span>'
+      +       '</div>'
+      +     '</div>'
+      +   '</div>'
+      + '</div>'
+
+      + '<div class="section">'
+      +   '<div class="section-title">基本信息</div>'
+      +   '<div class="info-grid">'
+      +     '<div class="info-item"><div class="lbl">实验室类型</div><div class="val">' + (l.type || '—') + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">管理员</div><div class="val">' + (l.admin || '—') + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">所属学院（部门）</div><div class="val">' + (l.college || '—') + '</div></div>'
+      +     '<div class="info-item"><div class="lbl">工位数</div><div class="val">' + (l.workstation || '0') + ' 个</div></div>'
+      +   '</div>'
+      + '</div>'
+
+      + '<div class="section">'
+      +   '<div class="section-title">位置信息</div>'
+      +   '<div class="info-item"><div class="lbl">详细位置</div><div class="val">' + (l.location || '—') + '</div></div>'
+      + '</div>'
+
+      + '<div class="section">'
+      +   '<div class="section-title">说明</div>'
+      +   '<div class="info-full"><div class="val">' + (l.description || '暂无说明') + '</div></div>'
+      + '</div>';
+
+    document.getElementById('detailContent').innerHTML = html;
+  }
+
+  function goBack(){
+    location.href = 'lab.html';
+  }
+  function goEdit(){
+    location.href = 'lab.html?edit=' + labId;
+  }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+
+  init();
+</script>
+</body>
+</html>
